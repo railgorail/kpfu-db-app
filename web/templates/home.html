@@ -1,77 +1,99 @@
-{{template "layout.html" .}}
+{{define "home.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/view">View</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task-1">Task 1</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task-2">Task 2</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task-3">Task 3</a></li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h2>Warehouses</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Warehouse No</th>
+                    <th>Manager Surname</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Warehouses}}
+                <tr>
+                    <td>{{.WarehouseNo}}</td>
+                    <td>{{.ManagerSurname}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
 
-{{define "content"}}
-<h2>Warehouses</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Warehouse No</th>
-            <th>Manager Surname</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{range .Warehouses}}
-        <tr>
-            <td>{{.WarehouseNo}}</td>
-            <td>{{.ManagerSurname}}</td>
-        </tr>
-        {{end}}
-    </tbody>
-</table>
+        <h2>Contracts</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Contract No</th>
+                    <th>Part Code</th>
+                    <th>Unit</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Plan Qty</th>
+                    <th>Contract Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Contracts}}
+                <tr>
+                    <td>{{.ContractNo}}</td>
+                    <td>{{.PartCode}}</td>
+                    <td>{{.Unit}}</td>
+                    <td>{{.StartDate.Format "2006-01-02"}}</td>
+                    <td>{{.EndDate.Format "2006-01-02"}}</td>
+                    <td>{{.PlanQty}}</td>
+                    <td>{{.ContractPrice}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
 
-<h2>Contracts</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Contract No</th>
-            <th>Part Code</th>
-            <th>Unit</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>Plan Qty</th>
-            <th>Contract Price</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{range .Contracts}}
-        <tr>
-            <td>{{.ContractNo}}</td>
-            <td>{{.PartCode}}</td>
-            <td>{{.Unit}}</td>
-            <td>{{.StartDate}}</td>
-            <td>{{.EndDate}}</td>
-            <td>{{.PlanQty}}</td>
-            <td>{{.ContractPrice}}</td>
-        </tr>
-        {{end}}
-    </tbody>
-</table>
-
-<h2>Deliveries</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Warehouse No</th>
-            <th>Receipt Doc No</th>
-            <th>Contract No</th>
-            <th>Part Code</th>
-            <th>Unit</th>
-            <th>Qty</th>
-            <th>Received Date</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{range .Deliveries}}
-        <tr>
-            <td>{{.WarehouseNo}}</td>
-            <td>{{.ReceiptDocNo}}</td>
-            <td>{{.ContractNo}}</td>
-            <td>{{.PartCode}}</td>
-            <td>{{.Unit}}</td>
-            <td>{{.Qty}}</td>
-            <td>{{.ReceivedDate}}</td>
-        </tr>
-        {{end}}
-    </tbody>
-</table>
+        <h2>Deliveries</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Warehouse No</th>
+                    <th>Receipt Doc No</th>
+                    <th>Contract No</th>
+                    <th>Part Code</th>
+                    <th>Unit</th>
+                    <th>Qty</th>
+                    <th>Received Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Deliveries}}
+                <tr>
+                    <td>{{.WarehouseNo}}</td>
+                    <td>{{.ReceiptDocNo}}</td>
+                    <td>{{.ContractNo}}</td>
+                    <td>{{.PartCode}}</td>
+                    <td>{{.Unit}}</td>
+                    <td>{{.Qty}}</td>
+                    <td>{{.ReceivedDate.Format "2006-01-02"}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
 {{end}}
