@@ -1,0 +1,75 @@
+package repository
+
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/railgorail/kpfu-db-app/internal/domain"
+)
+
+// Repository holds the database connection pool.
+type Repository struct {
+	db *pgxpool.Pool
+}
+
+// New creates a new Repository.
+func New(db *pgxpool.Pool) *Repository {
+	return &Repository{db: db}
+}
+
+// GetWarehouses retrieves all warehouses from the database.
+func (r *Repository) GetWarehouses(ctx context.Context) ([]domain.Warehouse, error) {
+	rows, err := r.db.Query(ctx, "SELECT warehouse_no, manager_surname FROM warehouses")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var warehouses []domain.Warehouse
+	for rows.Next() {
+		var w domain.Warehouse
+		if err := rows.Scan(&w.WarehouseNo, &w.ManagerSurname); err != nil {
+			return nil, err
+		}
+		warehouses = append(warehouses, w)
+	}
+	return warehouses, nil
+}
+
+// GetContracts retrieves all contracts from the database.
+func (r *Repository) GetContracts(ctx context.Context) ([]domain.Contract, error) {
+	rows, err := r.db.Query(ctx, "SELECT contract_no, part_code, unit, start_date, end_date, plan_qty, contract_price FROM contracts")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var contracts []domain.Contract
+	for rows.Next() {
+		var c domain.Contract
+		if err := rows.Scan(&c.ContractNo, &c.PartCode, &c.Unit, &c.StartDate, &c.EndDate, &c.PlanQty, &c.ContractPrice); err != nil {
+			return nil, err
+		}
+		contracts = append(contracts, c)
+	}
+	return contracts, nil
+}
+
+// GetDeliveries retrieves all deliveries from the database.
+func (r *Repository) GetDeliveries(ctx context.Context) ([]domain.Delivery, error) {
+	rows, err := r.db.Query(ctx, "SELECT warehouse_no, receipt_doc_no, contract_no, part_code, unit, qty, received_date FROM deliveries")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var deliveries []domain.Delivery
+	for rows.Next() {
+		var d domain.Delivery
+		if err := rows.Scan(&d.WarehouseNo, &d.ReceiptDocNo, &d.ContractNo, &d.PartCode, &d.Unit, &d.Qty, &d.ReceivedDate); err != nil {
+			return nil, err
+		}
+		deliveries = append(deliveries, d)
+	}
+	return deliveries, nil
+}

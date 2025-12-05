@@ -1,0 +1,77 @@
+{{template "layout.html" .}}
+
+{{define "content"}}
+<h2>Warehouses</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Warehouse No</th>
+            <th>Manager Surname</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Warehouses}}
+        <tr>
+            <td>{{.WarehouseNo}}</td>
+            <td>{{.ManagerSurname}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+<h2>Contracts</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Contract No</th>
+            <th>Part Code</th>
+            <th>Unit</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Plan Qty</th>
+            <th>Contract Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Contracts}}
+        <tr>
+            <td>{{.ContractNo}}</td>
+            <td>{{.PartCode}}</td>
+            <td>{{.Unit}}</td>
+            <td>{{.StartDate}}</td>
+            <td>{{.EndDate}}</td>
+            <td>{{.PlanQty}}</td>
+            <td>{{.ContractPrice}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+<h2>Deliveries</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Warehouse No</th>
+            <th>Receipt Doc No</th>
+            <th>Contract No</th>
+            <th>Part Code</th>
+            <th>Unit</th>
+            <th>Qty</th>
+            <th>Received Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Deliveries}}
+        <tr>
+            <td>{{.WarehouseNo}}</td>
+            <td>{{.ReceiptDocNo}}</td>
+            <td>{{.ContractNo}}</td>
+            <td>{{.PartCode}}</td>
+            <td>{{.Unit}}</td>
+            <td>{{.Qty}}</td>
+            <td>{{.ReceivedDate}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}
