@@ -37,6 +37,7 @@ DROP FUNCTION IF EXISTS fn_log_delivery_insert() CASCADE;
 DROP PROCEDURE IF EXISTS p_contract_summary(INT, TEXT, OUT DECIMAL(10,2), OUT DECIMAL(10,2));
 DROP FUNCTION IF EXISTS fn_warehouse_count(fn_manager_surname text);
 DROP FUNCTION IF EXISTS fn_deliveries_in_range(DATE, DATE);
+DROP VIEW IF EXISTS full_deliveries_view CASCADE;
 
 
 -- Склады
@@ -70,7 +71,9 @@ CREATE TABLE deliveries (
     PRIMARY KEY (warehouse_no, receipt_doc_no),
     CONSTRAINT fk_delivery_warehouse FOREIGN KEY (warehouse_no) 
         REFERENCES warehouses(warehouse_no)
-        ON DELETE CASCADE ON UPDATE cascade
+        ON DELETE CASCADE ON UPDATE cascade,
+    CONSTRAINT fk_delivery_contract FOREIGN KEY (contract_no, part_code) 
+        REFERENCES contracts(contract_no, part_code)
 );
 
 -- Таблица аудита для триггеров
@@ -174,6 +177,33 @@ AS $$
     ORDER BY received_date;
 $$;
 
+CREATE VIEW full_deliveries_view AS
+	SELECT
+		d.warehouse_no,
+		w.manager_surname,
+		
+		d.receipt_doc_no,
+		d.received_date,
+		d.qty,
+		d.unit AS delivery_unit,
+
+		d.contract_no,
+		d.part_code,
+
+		c.unit AS contract_unit,
+		c.start_date,
+		c.end_date,
+		c.plan_qty,
+		c.contract_price
+
+	FROM deliveries d
+	LEFT JOIN warehouses w 
+		ON d.warehouse_no = w.warehouse_no
+	LEFT JOIN contracts c
+		ON d.contract_no = c.contract_no
+	AND d.part_code = c.part_code;
+    
+-- filling with example data
 INSERT INTO warehouses (manager_surname) VALUES
 ('Иванов'),
 ('Петров'),
@@ -181,7 +211,6 @@ INSERT INTO warehouses (manager_surname) VALUES
 ('Смирнов'),
 ('Кузнецов');
 
--- Договоры
 INSERT INTO contracts VALUES
 (101, 'A100', 'pcs', '2024-01-01', '2024-06-01', 1000, 12.50),
 (101, 'B200', 'kg',  '2024-02-01', '2024-05-01', 500, 8.00),
@@ -190,7 +219,6 @@ INSERT INTO contracts VALUES
 (104, 'D400', 'm',   '2024-04-10', '2024-07-20', 3000, 3.50),
 (105, 'B200', 'kg',  '2024-02-15', '2024-08-15', 700, 7.80);
 
--- Поставки (провызовут аудит автоматически)
 INSERT INTO deliveries VALUES
 (1, 1, 101, 'A100', 'pcs', 120, '2024-01-10'),
 (1, 2, 101, 'A100', 'pcs', 230, '2024-02-12'),

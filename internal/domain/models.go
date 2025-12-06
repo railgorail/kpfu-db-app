@@ -29,3 +29,25 @@ type Delivery struct {
 	Qty          float64 `json:"qty"`
 	ReceivedDate time.Time  `json:"received_date"`
 }
+
+type View struct {
+	// From warehouses
+	WarehouseNo    int    `json:"warehouse_no"`
+	ManagerSurname string `json:"manager_surname"`
+
+	// From deliveries
+	ReceiptDocNo int       `json:"receipt_doc_no"`
+	ReceivedDate time.Time `json:"received_date"`
+	Qty          float64   `json:"qty"`
+	DeliveryUnit string    `json:"delivery_unit"`
+
+	ContractNo int    `json:"contract_no"`
+	PartCode   string `json:"part_code"`
+
+	// From contracts
+	ContractUnit  string    `json:"contract_unit"`
+	StartDate     time.Time `json:"start_date"`
+	EndDate       time.Time `json:"end_date"`
+	PlanQty       float64   `json:"plan_qty"`
+	ContractPrice float64   `json:"contract_price"`
+}

@@ -3,10 +3,8 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/railgorail/kpfu-db-app/internal/domain"
 	"github.com/railgorail/kpfu-db-app/internal/repository"
 )
 
@@ -47,23 +45,6 @@ func (h *Handler) Home(c *gin.Context) {
 		return
 	}
 
-	// Dummy data for testing
-	if len(warehouses) == 0 {
-		warehouses = []domain.Warehouse{
-			{WarehouseNo: 99, ManagerSurname: "Test Warehouse"},
-		}
-	}
-	if len(contracts) == 0 {
-		contracts = []domain.Contract{
-			{ContractNo: 999, PartCode: "TEST", Unit: "pcs", StartDate: time.Now(), EndDate: time.Now(), PlanQty: 100, ContractPrice: 9.99},
-		}
-	}
-	if len(deliveries) == 0 {
-		deliveries = []domain.Delivery{
-			{WarehouseNo: 99, ReceiptDocNo: 9999, ContractNo: 999, PartCode: "TEST", Unit: "pcs", Qty: 50, ReceivedDate: time.Now()},
-		}
-	}
-
 	c.HTML(http.StatusOK, "home.html", gin.H{
 		"Title":      "Home",
 		"Warehouses": warehouses,
@@ -75,9 +56,16 @@ func (h *Handler) Home(c *gin.Context) {
 
 // View handles the view page.
 func (h *Handler) View(c *gin.Context) {
+	view, err := h.repo.GetView(c.Request.Context())
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error fetching view data: %v", err)
+		return
+	}
 	c.HTML(http.StatusOK, "view.html", gin.H{
 		"Title": "View",
+		"View":  view,
 	})
+	fmt.Println(view)
 }
 
 // Task1 handles the task-1 page.

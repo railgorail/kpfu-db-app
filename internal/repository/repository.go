@@ -73,3 +73,38 @@ func (r *Repository) GetDeliveries(ctx context.Context) ([]domain.Delivery, erro
 	}
 	return deliveries, nil
 }
+
+func (r *Repository) GetView(ctx context.Context) ([]domain.View, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT * FROM full_deliveries_view;
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var view []domain.View
+	for rows.Next() {
+		var v domain.View
+		err := rows.Scan(
+			&v.WarehouseNo,
+			&v.ManagerSurname,
+			&v.ReceiptDocNo,
+			&v.ReceivedDate,
+			&v.Qty,
+			&v.DeliveryUnit,
+			&v.ContractNo,
+			&v.PartCode,
+			&v.ContractUnit,
+			&v.StartDate,
+			&v.EndDate,
+			&v.PlanQty,
+			&v.ContractPrice,
+		)
+		if err != nil {
+			return nil, err
+		}
+		view = append(view, v)
+	}
+	return view, nil
+}
