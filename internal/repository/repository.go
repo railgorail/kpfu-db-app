@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/railgorail/kpfu-db-app/internal/domain"
@@ -107,4 +108,37 @@ func (r *Repository) GetView(ctx context.Context) ([]domain.View, error) {
 		view = append(view, v)
 	}
 	return view, nil
+}
+
+func (r *Repository) GetTask2(ctx context.Context) ([]domain.Task2, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT contract_no, part_code, plan_qty, end_date, 
+			SUM(plan_qty) OVER(PARTITION BY contract_no) AS total_plan_qty,
+			DENSE_RANK() OVER (ORDER BY end_date) AS priority
+		FROM contracts
+		WHERE contract_price > 100;
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var task2 []domain.Task2
+	for rows.Next() {
+		var t domain.Task2
+		err := rows.Scan(
+			&t.ContractNo,
+			&t.PartCode,
+			&t.PlanQty,
+			&t.EndDate,
+			&t.SumQty,
+			&t.Priotity,
+		)
+		if err != nil {
+			return nil, err
+		}
+		task2 = append(task2, t)
+	}
+	fmt.Println(task2)
+	return task2, nil
 }

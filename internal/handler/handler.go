@@ -22,9 +22,10 @@ func New(repo *repository.Repository) *Handler {
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/", h.Home)
 	r.GET("/view", h.View)
-	r.GET("/task-1", h.Task1)
-	r.GET("/task-2", h.Task2)
-	r.GET("/task-3", h.Task3)
+	tasks := r.Group("/task")
+	tasks.GET("/1", h.Task1)
+	tasks.GET("/2", h.Task2)
+	tasks.GET("/3", h.Task3)
 }
 
 // Home handles the home page.
@@ -68,7 +69,7 @@ func (h *Handler) View(c *gin.Context) {
 	fmt.Println(view)
 }
 
-// Task1 handles the task-1 page.
+// Task1 handles the task/1 page.
 func (h *Handler) Task1(c *gin.Context) {
 	c.HTML(http.StatusOK, "task.html", gin.H{
 		"Title":    "Task 1",
@@ -78,9 +79,14 @@ func (h *Handler) Task1(c *gin.Context) {
 
 // Task2 handles the task-2 page.
 func (h *Handler) Task2(c *gin.Context) {
-	c.HTML(http.StatusOK, "task.html", gin.H{
-		"Title":    "Task 2",
-		"TaskName": "Task 2",
+	t, err := h.repo.GetTask2(c.Request.Context())
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error fetching task2 data: %v", err)
+		return
+	}
+	c.HTML(http.StatusOK, "task2.html", gin.H{
+		"Title": "Task 2",
+		"Task2": t,
 	})
 }
 

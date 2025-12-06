@@ -21,13 +21,13 @@ type Contract struct {
 
 // Delivery represents a delivery in the database.
 type Delivery struct {
-	WarehouseNo  int     `json:"warehouse_no"`
-	ReceiptDocNo int     `json:"receipt_doc_no"`
-	ContractNo   int     `json:"contract_no"`
-	PartCode     string  `json:"part_code"`
-	Unit         string  `json:"unit"`
-	Qty          float64 `json:"qty"`
-	ReceivedDate time.Time  `json:"received_date"`
+	WarehouseNo  int       `json:"warehouse_no"`
+	ReceiptDocNo int       `json:"receipt_doc_no"`
+	ContractNo   int       `json:"contract_no"`
+	PartCode     string    `json:"part_code"`
+	Unit         string    `json:"unit"`
+	Qty          float64   `json:"qty"`
+	ReceivedDate time.Time `json:"received_date"`
 }
 
 type View struct {
@@ -50,4 +50,13 @@ type View struct {
 	EndDate       time.Time `json:"end_date"`
 	PlanQty       float64   `json:"plan_qty"`
 	ContractPrice float64   `json:"contract_price"`
+}
+
+type Task2 struct {
+	ContractNo int       `json:"contract_no"`
+	PartCode   string    `json:"part_code"`
+	PlanQty    float64   `json:"plan_qty"`
+	EndDate    time.Time `json:"end_date"`
+	SumQty     float64   `json:"sum_qty"`
+	Priotity   int       `json:"priority"`
 }

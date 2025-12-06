@@ -1,14 +1,12 @@
-{{define "view.html"}}
+{{define "task2.html"}}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .Title }}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
-
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="collapse navbar-collapse">
@@ -22,47 +20,32 @@
         </div>
     </nav>
     <div class="container mt-4">
-        <h2>View</h2>
+        <h2>Task 2</h2>
         <table class="table">
             <thead>
                 <tr>
-                    <th>Warehouse No</th>
-                    <th>Manager Surname</th>
-                    <th>Receipt Doc No</th>
-                    <th>Received Date</th>
-                    <th>Qty</th>
-                    <th>Delivery Unit</th>
                     <th>Contract No</th>
                     <th>Part Code</th>
-                    <th>Contract Unit</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
                     <th>Plan Qty</th>
-                    <th>Contract Price</th>
+                    <th>End Date</th>
+                    <th>Sum Qty</th>
+                    <th>Priotity</th>
                 </tr>
             </thead>
             <tbody>
-                {{range .View}}
+                {{range .Task2}}
                 <tr>
-                    <td>{{.WarehouseNo}}</td>
-                    <td>{{.ManagerSurname}}</td>
-                    <td>{{.ReceiptDocNo}}</td>
-                    <td>{{.ReceivedDate.Format "2006-01-02"}}</td>
-                    <td>{{.Qty}}</td>
-                    <td>{{.DeliveryUnit}}</td>
                     <td>{{.ContractNo}}</td>
                     <td>{{.PartCode}}</td>
-                    <td>{{.ContractUnit}}</td>
-                    <td>{{.StartDate.Format "2006-01-02"}}</td>
-                    <td>{{.EndDate.Format "2006-01-02"}}</td>
                     <td>{{.PlanQty}}</td>
-                    <td>{{.ContractPrice}}</td>
+                    <td>{{.EndDate.Format "2006-01-02"}}</td>
+                    <td>{{.SumQty}}</td>
+                    <td>{{.Priotity}}</td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
     </div>
 </body>
-
 </html>
 {{end}}
