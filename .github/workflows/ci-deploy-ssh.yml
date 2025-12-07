@@ -1,4 +1,4 @@
-name: Go CI + Deploy to VM
+name: Deploy to VM
 
 on:
   push:
@@ -6,23 +6,9 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-latest 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      # Можно добавить шаги CI для сборки/тестов Go
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-
-      - name: Build Go project
-        run: go build -v ./...
-
-      # Шаг деплоя на VM
-      - name: Deploy to VM
+      - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
