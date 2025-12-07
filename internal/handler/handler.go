@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/railgorail/kpfu-db-app/internal/repository"
@@ -71,9 +72,21 @@ func (h *Handler) View(c *gin.Context) {
 
 // Task1 handles the task/1 page.
 func (h *Handler) Task1(c *gin.Context) {
-	c.HTML(http.StatusOK, "task.html", gin.H{
-		"Title":    "Task 1",
-		"TaskName": "Task 1",
+	priceStr := c.DefaultQuery("price", "100")
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		price = 100
+	}
+
+	t, err := h.repo.GetTask1(c.Request.Context(), price)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error fetching task1 data: %v", err)
+		return
+	}
+	c.HTML(http.StatusOK, "task1.html", gin.H{
+		"Title": "Task 1",
+		"Task1": t,
+		"Price": price,
 	})
 }
 
@@ -92,8 +105,27 @@ func (h *Handler) Task2(c *gin.Context) {
 
 // Task3 handles the task-3 page.
 func (h *Handler) Task3(c *gin.Context) {
-	c.HTML(http.StatusOK, "task.html", gin.H{
-		"Title":    "Task 3",
-		"TaskName": "Task 3",
+	planQtyStr := c.DefaultQuery("plan_qty", "1000")
+	planQty, err := strconv.Atoi(planQtyStr)
+	if err != nil {
+		planQty = 1000
+	}
+
+	deliveryQtyStr := c.DefaultQuery("delivery_qty", "50")
+	deliveryQty, err := strconv.Atoi(deliveryQtyStr)
+	if err != nil {
+		deliveryQty = 50
+	}
+
+	t, err := h.repo.GetTask3(c.Request.Context(), planQty, deliveryQty)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error fetching task3 data: %v", err)
+		return
+	}
+	c.HTML(http.StatusOK, "task3.html", gin.H{
+		"Title":       "Task 3",
+		"Task3":       t,
+		"PlanQty":     planQty,
+		"DeliveryQty": deliveryQty,
 	})
 }

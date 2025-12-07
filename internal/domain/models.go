@@ -52,6 +52,16 @@ type View struct {
 	ContractPrice float64   `json:"contract_price"`
 }
 
+type Task1 struct {
+	WarehouseNo   int       `json:"warehouse_no"`
+	PartCode      string    `json:"part_code"`
+	ReceiptDocNo  int       `json:"receipt_doc_no"`
+	ReceivedDate  time.Time `json:"received_date"`
+	Qty           float64   `json:"qty"`
+	ContractNo    int       `json:"contract_no"`
+	ContractPrice float64   `json:"contract_price"`
+}
+
 type Task2 struct {
 	ContractNo int       `json:"contract_no"`
 	PartCode   string    `json:"part_code"`

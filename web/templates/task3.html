@@ -1,0 +1,70 @@
+{{define "task3.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/view">View</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/1">Task 1</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/2">Task 2</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/3">Task 3</a></li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h2>Task 3</h2>
+        <br>
+        <form action="/task/3" method="get">
+            <h3>Найти все договорные поставки, у которых по договору plan_qty >
+                <input type="number" name="plan_qty" id="plan_qty" class="form-control-sm" value="{{ .PlanQty }}"
+                    style="width: 80px;">
+                <br>
+                и существует хотя бы один склад,<br>
+                такой что все поставки этого контракта на этом складе >
+                <input type="number" name="delivery_qty" id="delivery_qty" class="form-control-sm"
+                    value="{{ .DeliveryQty }}" style="width: 80px;">
+            </h3>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+        <br>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Contract No</th>
+                    <th>Part Code</th>
+                    <th>Unit</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Plan Qty</th>
+                    <th>Contract Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Task3}}
+                <tr>
+                    <td>{{.ContractNo}}</td>
+                    <td>{{.PartCode}}</td>
+                    <td>{{.Unit}}</td>
+                    <td>{{.StartDate.Format "2006-01-02"}}</td>
+                    <td>{{.EndDate.Format "2006-01-02"}}</td>
+                    <td>{{.PlanQty}}</td>
+                    <td>{{.ContractPrice}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
+{{end}}

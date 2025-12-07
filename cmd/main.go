@@ -28,12 +28,12 @@ func main() {
 
 	// Set up router
 	r := gin.Default()
-	r.LoadHTMLFiles("web/templates/home.html", "web/templates/task2.html", "web/templates/view.html")
+	r.LoadHTMLFiles("web/templates/home.html","web/templates/task1.html", "web/templates/task2.html", "web/templates/task3.html", "web/templates/view.html")
 	h.RegisterRoutes(r)
 
 	// Start server
-	fmt.Println("Starting server on :8080")
-	if err := r.Run(":8080"); err != nil {
+	fmt.Println("Starting server on :80")
+	if err := r.Run(":80"); err != nil {
 		log.Fatalf("could not run server: %v", err)
 	}
 }

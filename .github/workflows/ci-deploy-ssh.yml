@@ -41,5 +41,3 @@ jobs:
             docker compose pull
             docker compose build
             docker compose up -d
-            docker image prune -f
-            docker container prune -f

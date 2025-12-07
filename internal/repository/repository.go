@@ -109,6 +109,40 @@ func (r *Repository) GetView(ctx context.Context) ([]domain.View, error) {
 	}
 	return view, nil
 }
+func (r *Repository) GetTask1(ctx context.Context, price float64) ([]domain.Task1, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT d.warehouse_no, d.part_code, d.receipt_doc_no, d.received_date, d.qty, d.contract_no, c.contract_price
+		FROM deliveries d
+		JOIN contracts c
+		ON d.contract_no = c.contract_no
+		WHERE contract_price > $1
+		ORDER BY end_date;
+	`, price)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var task1 []domain.Task1
+	for rows.Next() {
+		var t domain.Task1
+		err := rows.Scan(
+			&t.WarehouseNo,
+			&t.PartCode,
+			&t.ReceiptDocNo,
+			&t.ReceivedDate,
+			&t.Qty,
+			&t.ContractNo,
+			&t.ContractPrice,
+		)
+		if err != nil {
+			return nil, err
+		}
+		task1 = append(task1, t)
+	}
+	fmt.Println(task1)
+	return task1, nil
+}
 
 func (r *Repository) GetTask2(ctx context.Context) ([]domain.Task2, error) {
 	rows, err := r.db.Query(ctx, `
@@ -116,7 +150,8 @@ func (r *Repository) GetTask2(ctx context.Context) ([]domain.Task2, error) {
 			SUM(plan_qty) OVER(PARTITION BY contract_no) AS total_plan_qty,
 			DENSE_RANK() OVER (ORDER BY end_date) AS priority
 		FROM contracts
-		WHERE contract_price > 100;
+		WHERE contract_price > 100
+		ORDER BY end_date;
 	`)
 	if err != nil {
 		return nil, err
@@ -141,4 +176,47 @@ func (r *Repository) GetTask2(ctx context.Context) ([]domain.Task2, error) {
 	}
 	fmt.Println(task2)
 	return task2, nil
+}
+
+func (r *Repository) GetTask3(ctx context.Context, planQty, deliveryQty int) ([]domain.Contract, error) {
+	rows, err := r.db.Query(ctx, `SELECT *
+	FROM contracts c
+	WHERE c.plan_qty > $1
+	AND EXISTS (
+		SELECT 1
+		FROM deliveries d
+		WHERE d.contract_no = c.contract_no
+			AND $2 < ALL (
+				SELECT d2.qty
+				FROM deliveries d2
+				WHERE d2.contract_no = c.contract_no
+				AND d2.warehouse_no = d.warehouse_no
+        )
+  );
+
+	`, planQty, deliveryQty)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var task3 []domain.Contract
+	for rows.Next() {
+		var t domain.Contract
+		err := rows.Scan(
+			&t.ContractNo,
+			&t.PartCode,
+			&t.Unit,
+			&t.StartDate,
+			&t.EndDate,
+			&t.PlanQty,
+			&t.ContractPrice,
+		)
+		if err != nil {
+			return nil, err
+		}
+		task3 = append(task3, t)
+	}
+	fmt.Println(task3)
+	return task3, nil
 }
