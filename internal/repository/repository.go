@@ -186,10 +186,12 @@ func (r *Repository) GetTask3(ctx context.Context, planQty, deliveryQty int) ([]
 		SELECT 1
 		FROM deliveries d
 		WHERE d.contract_no = c.contract_no
+		AND d.part_code = c.part_code
 			AND $2 < ALL (
 				SELECT d2.qty
 				FROM deliveries d2
 				WHERE d2.contract_no = c.contract_no
+				AND d2.part_code = c.part_code
 				AND d2.warehouse_no = d.warehouse_no
         )
   );

@@ -28,7 +28,8 @@ func main() {
 
 	// Set up router
 	r := gin.Default()
-	r.LoadHTMLFiles("web/templates/home.html","web/templates/task1.html", "web/templates/task2.html", "web/templates/task3.html", "web/templates/view.html")
+	r.LoadHTMLGlob("web/templates/*.html")
+	r.Static("/static", "./static")
 	h.RegisterRoutes(r)
 
 	// Start server

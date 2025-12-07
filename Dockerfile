@@ -20,6 +20,7 @@ WORKDIR /app
 
 COPY --from=build /app/main .
 COPY --from=build /app/web/templates ./web/templates
+COPY --from=build /app/static ./static
 
 EXPOSE 8080
 
