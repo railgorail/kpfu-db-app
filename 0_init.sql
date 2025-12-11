@@ -31,6 +31,7 @@ DROP TABLE IF EXISTS deliveries_audit CASCADE;
 DROP TABLE IF EXISTS deliveries CASCADE;
 DROP TABLE IF EXISTS contracts CASCADE;
 DROP TABLE IF EXISTS warehouses CASCADE;
+DROP TABLE IF EXISTS proc_result CASCADE;
 
 DROP FUNCTION IF EXISTS fn_cascade_delete_deliveries() CASCADE;
 DROP FUNCTION IF EXISTS fn_log_delivery_insert() CASCADE;
@@ -147,6 +148,11 @@ BEGIN
     END IF;
 END;
 $$;
+
+CREATE TABLE IF NOT EXISTS proc_result (
+    total_delivered DECIMAL(10,2),
+    contract_price DECIMAL(10,2)
+);
 
 -- Скалярная функция: количество дней между датами
 CREATE OR REPLACE FUNCTION fn_warehouse_count(fn_manager_surname text) 

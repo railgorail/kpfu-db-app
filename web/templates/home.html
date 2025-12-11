@@ -56,6 +56,18 @@
             background-color: #e9ecef;
             cursor: not-allowed;
         }
+
+        .new-row {
+            background-color: #fff3cd;
+        }
+
+        .new-row input,
+        .new-row select {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
     </style>
 </head>
 
@@ -68,12 +80,14 @@
                 <li class="nav-item"><a class="nav-link" href="/task/1">Task 1</a></li>
                 <li class="nav-item"><a class="nav-link" href="/task/2">Task 2</a></li>
                 <li class="nav-item"><a class="nav-link" href="/task/3">Task 3</a></li>
+                <li class="nav-item"><a class="nav-link" href="/procedure">Procedure</a></li>
             </ul>
         </div>
     </nav>
     <div class="save-status alert alert-info" id="saveStatus"></div>
     <div class="container mt-4">
         <h2>Warehouses</h2>
+        <button class="btn btn-primary mb-2" onclick="addNewWarehouse()">Add New Warehouse</button>
         <table class="table table-bordered" id="warehousesTable">
             <thead>
                 <tr>
@@ -93,6 +107,7 @@
         </table>
 
         <h2>Contracts</h2>
+        <button class="btn btn-primary mb-2" onclick="addNewContract()">Add New Contract</button>
         <table class="table table-bordered" id="contractsTable">
             <thead>
                 <tr>
@@ -128,6 +143,7 @@
         </table>
 
         <h2>Deliveries</h2>
+        <button class="btn btn-primary mb-2" onclick="addNewDelivery()">Add New Delivery</button>
         <table class="table table-bordered" id="deliveriesTable">
             <thead>
                 <tr>
@@ -295,6 +311,224 @@
                     this.textContent = text;
                 });
             });
+
+            // Add new warehouse row
+            window.addNewWarehouse = function () {
+                const tbody = document.querySelector('#warehousesTable tbody');
+                const row = document.createElement('tr');
+                row.className = 'new-row';
+                row.innerHTML = `
+                    <td><em>New</em></td>
+                    <td><input type="text" class="new-manager-surname" placeholder="Manager Surname" required></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="saveNewWarehouse(this)">Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelNewRow(this)">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                row.querySelector('.new-manager-surname').focus();
+            };
+
+            // Add new contract row
+            window.addNewContract = function () {
+                const tbody = document.querySelector('#contractsTable tbody');
+                const row = document.createElement('tr');
+                row.className = 'new-row';
+                const today = new Date().toISOString().split('T')[0];
+                row.innerHTML = `
+                    <td><input type="number" class="new-contract-no" placeholder="Contract No" required></td>
+                    <td><input type="text" class="new-part-code" placeholder="Part Code" required></td>
+                    <td>
+                        <select class="new-unit" required>
+                            <option value="">Select unit</option>
+                            <option value="pcs">pcs</option>
+                            <option value="kg">kg</option>
+                            <option value="m">m</option>
+                            <option value="set">set</option>
+                        </select>
+                    </td>
+                    <td><input type="date" class="new-start-date" required></td>
+                    <td><input type="date" class="new-end-date" required></td>
+                    <td><input type="number" step="0.01" class="new-plan-qty" placeholder="Plan Qty" required></td>
+                    <td><input type="number" step="0.01" class="new-contract-price" placeholder="Price" required></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="saveNewContract(this)">Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelNewRow(this)">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                row.querySelector('.new-contract-no').focus();
+            };
+
+            // Add new delivery row
+            window.addNewDelivery = function () {
+                const tbody = document.querySelector('#deliveriesTable tbody');
+                const row = document.createElement('tr');
+                row.className = 'new-row';
+                const today = new Date().toISOString().split('T')[0];
+                row.innerHTML = `
+                    <td><input type="number" class="new-warehouse-no" placeholder="Warehouse No" required></td>
+                    <td><input type="number" class="new-receipt-doc-no" placeholder="Receipt Doc No" required></td>
+                    <td><input type="number" class="new-contract-no" placeholder="Contract No" required></td>
+                    <td><input type="text" class="new-part-code" placeholder="Part Code" required></td>
+                    <td>
+                        <select class="new-unit" required>
+                            <option value="">Select unit</option>
+                            <option value="pcs">pcs</option>
+                            <option value="kg">kg</option>
+                            <option value="m">m</option>
+                            <option value="set">set</option>
+                        </select>
+                    </td>
+                    <td><input type="number" step="0.01" class="new-qty" placeholder="Qty" required></td>
+                    <td><input type="date" class="new-received-date" value="${today}" required></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="saveNewDelivery(this)">Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelNewRow(this)">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                row.querySelector('.new-warehouse-no').focus();
+            };
+
+            // Cancel new row
+            window.cancelNewRow = function (button) {
+                const row = button.closest('tr');
+                row.remove();
+            };
+
+            // Save new warehouse
+            window.saveNewWarehouse = async function (button) {
+                const row = button.closest('tr');
+                const managerSurname = row.querySelector('.new-manager-surname').value.trim();
+
+                if (!managerSurname) {
+                    showStatus('Manager surname is required', 'danger');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/api/warehouses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ manager_surname: managerSurname })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to create warehouse');
+                    }
+
+                    const result = await response.json();
+                    showStatus('Warehouse created successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } catch (error) {
+                    showStatus('Error creating warehouse: ' + error.message, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Save';
+                }
+            };
+
+            // Save new contract
+            window.saveNewContract = async function (button) {
+                const row = button.closest('tr');
+                const data = {
+                    contract_no: parseInt(row.querySelector('.new-contract-no').value),
+                    part_code: row.querySelector('.new-part-code').value.trim(),
+                    unit: row.querySelector('.new-unit').value,
+                    start_date: row.querySelector('.new-start-date').value,
+                    end_date: row.querySelector('.new-end-date').value,
+                    plan_qty: parseFloat(row.querySelector('.new-plan-qty').value),
+                    contract_price: parseFloat(row.querySelector('.new-contract-price').value)
+                };
+
+                if (!data.contract_no || !data.part_code || !data.unit || !data.start_date ||
+                    !data.end_date || !data.plan_qty || !data.contract_price) {
+                    showStatus('All fields are required', 'danger');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/api/contracts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to create contract');
+                    }
+
+                    showStatus('Contract created successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } catch (error) {
+                    showStatus('Error creating contract: ' + error.message, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Save';
+                }
+            };
+
+            // Save new delivery
+            window.saveNewDelivery = async function (button) {
+                const row = button.closest('tr');
+                const data = {
+                    warehouse_no: parseInt(row.querySelector('.new-warehouse-no').value),
+                    receipt_doc_no: parseInt(row.querySelector('.new-receipt-doc-no').value),
+                    contract_no: parseInt(row.querySelector('.new-contract-no').value),
+                    part_code: row.querySelector('.new-part-code').value.trim(),
+                    unit: row.querySelector('.new-unit').value,
+                    qty: parseFloat(row.querySelector('.new-qty').value),
+                    received_date: row.querySelector('.new-received-date').value
+                };
+
+                if (!data.warehouse_no || !data.receipt_doc_no || !data.contract_no || !data.part_code ||
+                    !data.unit || !data.qty || !data.received_date) {
+                    showStatus('All fields are required', 'danger');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/api/deliveries', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to create delivery');
+                    }
+
+                    showStatus('Delivery created successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } catch (error) {
+                    showStatus('Error creating delivery: ' + error.message, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Save';
+                }
+            };
         })();
     </script>
 </body>

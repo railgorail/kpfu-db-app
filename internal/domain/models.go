@@ -70,3 +70,11 @@ type Task2 struct {
 	SumQty     float64   `json:"sum_qty"`
 	Priotity   int       `json:"priority"`
 }
+
+// ContractSummary represents the result of p_contract_summary procedure
+type ContractSummary struct {
+	ContractNo     int      `json:"contract_no"`
+	PartCode       string   `json:"part_code"`
+	TotalDelivered *float64 `json:"total_delivered"` // pointer to handle NULL
+	ContractPrice  *float64 `json:"contract_price"`  // pointer to handle NULL
+}

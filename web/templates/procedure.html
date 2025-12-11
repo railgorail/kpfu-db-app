@@ -1,0 +1,137 @@
+{{define "procedure.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .description-block {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .result-section {
+            margin-top: 30px;
+        }
+
+        .result-table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/view">View</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/1">Task 1</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/2">Task 2</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/3">Task 3</a></li>
+                <li class="nav-item"><a class="nav-link" href="/procedure">Procedure</a></li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h2>Хранимая процедура: p_contract_summary</h2>
+
+        <h4 class="mt-4">Описание процедуры</h4>
+        <div class="description-block">{{ .ProcedureDescription }}</div>
+
+        <h4 class="mt-4">Выполнить процедуру</h4>
+        <form action="/procedure" method="get" class="mb-4">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="contract_no">Номер договора:</label>
+                    <input type="number" name="contract_no" id="contract_no" class="form-control"
+                        value="{{ .ContractNo }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="part_code">Код детали:</label>
+                    <input type="text" name="part_code" id="part_code" class="form-control" value="{{ .PartCode }}"
+                        required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Выполнить процедуру</button>
+        </form>
+
+        {{if .Error}}
+        <div class="alert alert-danger mt-3">
+            <strong>Ошибка:</strong> {{ .Error }}
+        </div>
+        {{end}}
+
+        {{if .Result}}
+        <div class="result-section">
+            <h4>Результаты выполнения процедуры</h4>
+            <div class="alert alert-success">
+                <strong>Процедура выполнена успешно!</strong>
+            </div>
+            <table class="table table-bordered result-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Номер договора</th>
+                        <th>Код детали</th>
+                        <th>Всего поставлено</th>
+                        <th>Договорная цена</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ .Result.ContractNo }}</td>
+                        <td>{{ .Result.PartCode }}</td>
+                        <td>
+                            {{if .Result.TotalDelivered}}
+                            {{ .Result.TotalDelivered }}
+                            {{else}}
+                            <em>NULL</em>
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if .Result.ContractPrice}}
+                            {{ .Result.ContractPrice }}
+                            {{else}}
+                            <em>NULL</em>
+                            {{end}}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="mt-3">
+                <h5>Детали результатов:</h5>
+                <ul>
+                    <li><strong>Номер договора:</strong> {{ .Result.ContractNo }}</li>
+                    <li><strong>Код детали:</strong> {{ .Result.PartCode }}</li>
+                    <li><strong>Всего поставлено:</strong>
+                        {{if .Result.TotalDelivered}}
+                        {{ .Result.TotalDelivered }} (сумма всех поставок по данному договору и детали)
+                        {{else}}
+                        <em>NULL или 0</em> (поставки не найдены или договор не найден)
+                        {{end}}
+                    </li>
+                    <li><strong>Договорная цена за единицу:</strong>
+                        {{if .Result.ContractPrice}}
+                        {{ .Result.ContractPrice }}
+                        {{else}}
+                        <em>NULL</em> (договор не найден)
+                        {{end}}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</body>
+
+</html>
+{{end}}
