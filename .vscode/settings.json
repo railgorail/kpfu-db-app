@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "https://www.schemastore.org/cirrus.json": "file:///Users/rail/Documents/life/edu/kpfu/3/db/app/.github/workflows/ci-deploy-ssh.yml"
+    }
+}

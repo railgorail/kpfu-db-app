@@ -116,7 +116,7 @@ func (r *Repository) GetTask1(ctx context.Context, price float64) ([]domain.Task
 		JOIN contracts c
 		ON d.contract_no = c.contract_no
 		WHERE contract_price > $1
-		ORDER BY end_date;
+		ORDER BY d.received_date;
 	`, price)
 	if err != nil {
 		return nil, err
@@ -221,4 +221,30 @@ func (r *Repository) GetTask3(ctx context.Context, planQty, deliveryQty int) ([]
 	}
 	fmt.Println(task3)
 	return task3, nil
+}
+
+// UpdateWarehouse updates a warehouse in the database.
+func (r *Repository) UpdateWarehouse(ctx context.Context, warehouseNo int, managerSurname string) error {
+	_, err := r.db.Exec(ctx, "UPDATE warehouses SET manager_surname = $1 WHERE warehouse_no = $2", managerSurname, warehouseNo)
+	return err
+}
+
+// UpdateContract updates a contract in the database.
+func (r *Repository) UpdateContract(ctx context.Context, contractNo int, partCode string, unit string, startDate, endDate string, planQty, contractPrice float64) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE contracts 
+		SET unit = $1, start_date = $2, end_date = $3, plan_qty = $4, contract_price = $5 
+		WHERE contract_no = $6 AND part_code = $7
+	`, unit, startDate, endDate, planQty, contractPrice, contractNo, partCode)
+	return err
+}
+
+// UpdateDelivery updates a delivery in the database.
+func (r *Repository) UpdateDelivery(ctx context.Context, warehouseNo, receiptDocNo int, contractNo int, partCode, unit string, qty float64, receivedDate string) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE deliveries 
+		SET contract_no = $1, part_code = $2, unit = $3, qty = $4, received_date = $5 
+		WHERE warehouse_no = $6 AND receipt_doc_no = $7
+	`, contractNo, partCode, unit, qty, receivedDate, warehouseNo, receiptDocNo)
+	return err
 }

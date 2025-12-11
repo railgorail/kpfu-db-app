@@ -1,12 +1,64 @@
 {{define "home.html"}}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .Title }}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .editable-cell {
+            cursor: cell;
+            padding: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .editable-cell:hover {
+            background-color: #f0f0f0;
+        }
+
+        .editable-cell:focus {
+            background-color: #fff3cd;
+            outline: 2px solid #ffc107;
+            outline-offset: -2px;
+        }
+
+        .editable-cell.editing {
+            background-color: #fff3cd;
+        }
+
+        .editable-cell.saving {
+            background-color: #d1ecf1;
+        }
+
+        .editable-cell.saved {
+            background-color: #d4edda;
+        }
+
+        .editable-cell.error {
+            background-color: #f8d7da;
+        }
+
+        .save-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        table {
+            table-layout: auto;
+        }
+
+        .readonly-cell {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="collapse navbar-collapse">
@@ -19,9 +71,10 @@
             </ul>
         </div>
     </nav>
+    <div class="save-status alert alert-info" id="saveStatus"></div>
     <div class="container mt-4">
         <h2>Warehouses</h2>
-        <table class="table">
+        <table class="table table-bordered" id="warehousesTable">
             <thead>
                 <tr>
                     <th>Warehouse No</th>
@@ -30,16 +83,17 @@
             </thead>
             <tbody>
                 {{range .Warehouses}}
-                <tr>
-                    <td>{{.WarehouseNo}}</td>
-                    <td>{{.ManagerSurname}}</td>
+                <tr data-table="warehouses" data-id="{{.WarehouseNo}}">
+                    <td class="readonly-cell">{{.WarehouseNo}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="manager_surname"
+                        data-original="{{.ManagerSurname}}">{{.ManagerSurname}}</td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
 
         <h2>Contracts</h2>
-        <table class="table">
+        <table class="table table-bordered" id="contractsTable">
             <thead>
                 <tr>
                     <th>Contract No</th>
@@ -53,21 +107,28 @@
             </thead>
             <tbody>
                 {{range .Contracts}}
-                <tr>
-                    <td>{{.ContractNo}}</td>
-                    <td>{{.PartCode}}</td>
-                    <td>{{.Unit}}</td>
-                    <td>{{.StartDate.Format "2006-01-02"}}</td>
-                    <td>{{.EndDate.Format "2006-01-02"}}</td>
-                    <td>{{.PlanQty}}</td>
-                    <td>{{.ContractPrice}}</td>
+                <tr data-table="contracts" data-contract-no="{{.ContractNo}}" data-part-code="{{.PartCode}}">
+                    <td class="readonly-cell">{{.ContractNo}}</td>
+                    <td class="readonly-cell">{{.PartCode}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="unit" data-original="{{.Unit}}">
+                        {{.Unit}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="start_date"
+                        data-original="{{.StartDate.Format " 2006-01-02"}}" data-type="date">{{.StartDate.Format
+                        "2006-01-02"}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="end_date"
+                        data-original="{{.EndDate.Format " 2006-01-02"}}" data-type="date">{{.EndDate.Format
+                        "2006-01-02"}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="plan_qty" data-original="{{.PlanQty}}"
+                        data-type="number">{{.PlanQty}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="contract_price"
+                        data-original="{{.ContractPrice}}" data-type="number">{{.ContractPrice}}</td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
 
         <h2>Deliveries</h2>
-        <table class="table">
+        <table class="table table-bordered" id="deliveriesTable">
             <thead>
                 <tr>
                     <th>Warehouse No</th>
@@ -81,14 +142,21 @@
             </thead>
             <tbody>
                 {{range .Deliveries}}
-                <tr>
-                    <td>{{.WarehouseNo}}</td>
-                    <td>{{.ReceiptDocNo}}</td>
-                    <td>{{.ContractNo}}</td>
-                    <td>{{.PartCode}}</td>
-                    <td>{{.Unit}}</td>
-                    <td>{{.Qty}}</td>
-                    <td>{{.ReceivedDate.Format "2006-01-02"}}</td>
+                <tr data-table="deliveries" data-warehouse-no="{{.WarehouseNo}}"
+                    data-receipt-doc-no="{{.ReceiptDocNo}}">
+                    <td class="readonly-cell">{{.WarehouseNo}}</td>
+                    <td class="readonly-cell">{{.ReceiptDocNo}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="contract_no"
+                        data-original="{{.ContractNo}}" data-type="number">{{.ContractNo}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="part_code"
+                        data-original="{{.PartCode}}">{{.PartCode}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="unit" data-original="{{.Unit}}">
+                        {{.Unit}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="qty" data-original="{{.Qty}}"
+                        data-type="number">{{.Qty}}</td>
+                    <td class="editable-cell" contenteditable="true" data-field="received_date"
+                        data-original="{{.ReceivedDate.Format " 2006-01-02"}}" data-type="date">{{.ReceivedDate.Format
+                        "2006-01-02"}}</td>
                 </tr>
                 {{end}}
             </tbody>
@@ -97,6 +165,139 @@
     <div class="container mt-4">
         <img src="/static/zall.png" alt="zall">
     </div>
+    <script>
+        (function () {
+            let saveTimeout = null;
+            const saveStatus = document.getElementById('saveStatus');
+
+            function showStatus(message, type = 'info') {
+                saveStatus.className = `save-status alert alert-${type}`;
+                saveStatus.textContent = message;
+                saveStatus.style.display = 'block';
+                setTimeout(() => {
+                    saveStatus.style.display = 'none';
+                }, 3000);
+            }
+
+            function getRowData(row) {
+                const table = row.dataset.table;
+                const data = { table };
+
+                if (table === 'warehouses') {
+                    data.id = parseInt(row.dataset.id);
+                } else if (table === 'contracts') {
+                    data.contract_no = parseInt(row.dataset.contractNo);
+                    data.part_code = row.dataset.partCode;
+                } else if (table === 'deliveries') {
+                    data.warehouse_no = parseInt(row.dataset.warehouseNo);
+                    data.receipt_doc_no = parseInt(row.dataset.receiptDocNo);
+                }
+
+                const cells = row.querySelectorAll('.editable-cell');
+                cells.forEach(cell => {
+                    const field = cell.dataset.field;
+                    let value = cell.textContent.trim();
+
+                    if (cell.dataset.type === 'number') {
+                        value = parseFloat(value);
+                    } else if (cell.dataset.type === 'date') {
+                        // Keep date as string, backend will parse it
+                    }
+
+                    data[field] = value;
+                });
+
+                return data;
+            }
+
+            async function saveRow(row) {
+                const cell = row.querySelector('.editable-cell.editing');
+                if (!cell) return;
+
+                cell.classList.remove('editing');
+                cell.classList.add('saving');
+
+                const data = getRowData(row);
+                const table = data.table;
+                delete data.table;
+
+                try {
+                    const response = await fetch(`/api/${table}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to save');
+                    }
+
+                    cell.classList.remove('saving');
+                    cell.classList.add('saved');
+                    cell.dataset.original = cell.textContent.trim();
+
+                    setTimeout(() => {
+                        cell.classList.remove('saved');
+                    }, 1000);
+
+                    showStatus('Changes saved successfully', 'success');
+                } catch (error) {
+                    cell.classList.remove('saving');
+                    cell.classList.add('error');
+                    showStatus('Error saving: ' + error.message, 'danger');
+
+                    // Revert to original value
+                    setTimeout(() => {
+                        cell.textContent = cell.dataset.original;
+                        cell.classList.remove('error');
+                    }, 2000);
+                }
+            }
+
+            // Handle cell editing
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('focus', function () {
+                    this.classList.add('editing');
+                    this.dataset.original = this.textContent.trim();
+                });
+
+                cell.addEventListener('blur', function () {
+                    const row = this.closest('tr');
+                    if (this.textContent.trim() !== this.dataset.original) {
+                        if (saveTimeout) {
+                            clearTimeout(saveTimeout);
+                        }
+                        saveTimeout = setTimeout(() => saveRow(row), 500);
+                    } else {
+                        this.classList.remove('editing');
+                    }
+                });
+
+                cell.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    } else if (e.key === 'Escape') {
+                        this.textContent = this.dataset.original;
+                        this.blur();
+                    }
+                });
+            });
+
+            // Handle paste events
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    this.textContent = text;
+                });
+            });
+        })();
+    </script>
 </body>
+
 </html>
 {{end}}
