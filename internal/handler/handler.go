@@ -11,17 +11,14 @@ import (
 	"github.com/railgorail/kpfu-db-app/internal/repository"
 )
 
-// Handler holds the repository.
 type Handler struct {
 	repo *repository.Repository
 }
 
-// New creates a new Handler.
 func New(repo *repository.Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-// RegisterRoutes registers the routes for the application.
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/", h.Home)
 	r.GET("/view", h.View)
@@ -30,22 +27,18 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	tasks.GET("/2", h.Task2)
 	tasks.GET("/3", h.Task3)
 
-	// API routes for updates
 	api := r.Group("/api")
 	api.PUT("/warehouses", h.UpdateWarehouse)
 	api.PUT("/contracts", h.UpdateContract)
 	api.PUT("/deliveries", h.UpdateDelivery)
-
-	// API routes for creates
 	api.POST("/warehouses", h.CreateWarehouse)
 	api.POST("/contracts", h.CreateContract)
 	api.POST("/deliveries", h.CreateDelivery)
 
-	// Procedure page
 	r.GET("/procedure", h.Procedure)
+	r.GET("/orm/task/1", h.ORMTask1)
 }
 
-// Home handles the home page.
 func (h *Handler) Home(c *gin.Context) {
 	warehouses, err := h.repo.GetWarehouses(c.Request.Context())
 	if err != nil {
@@ -71,7 +64,6 @@ func (h *Handler) Home(c *gin.Context) {
 	})
 }
 
-// View handles the view page.
 func (h *Handler) View(c *gin.Context) {
 	view, err := h.repo.GetView(c.Request.Context())
 	if err != nil {
@@ -84,7 +76,6 @@ func (h *Handler) View(c *gin.Context) {
 	})
 }
 
-// Task1 handles the task/1 page.
 func (h *Handler) Task1(c *gin.Context) {
 	priceStr := c.DefaultQuery("price", "100")
 	price, err := strconv.ParseFloat(priceStr, 64)
@@ -104,7 +95,25 @@ func (h *Handler) Task1(c *gin.Context) {
 	})
 }
 
-// Task2 handles the task-2 page.
+func (h *Handler) ORMTask1(c *gin.Context) {
+	priceStr := c.DefaultQuery("price", "100")
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		price = 100
+	}
+
+	t, err := h.repo.ORMGetTask1(c.Request.Context(), price)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error fetching ORM task1 data: %v", err)
+		return
+	}
+	c.HTML(http.StatusOK, "ORMtask1.html", gin.H{
+		"Title": "ORM Task 1",
+		"Task1": t,
+		"Price": price,
+	})
+}
+
 func (h *Handler) Task2(c *gin.Context) {
 	t, err := h.repo.GetTask2(c.Request.Context())
 	if err != nil {
@@ -117,7 +126,6 @@ func (h *Handler) Task2(c *gin.Context) {
 	})
 }
 
-// Task3 handles the task-3 page.
 func (h *Handler) Task3(c *gin.Context) {
 	planQtyStr := c.DefaultQuery("plan_qty", "1000")
 	planQty, err := strconv.Atoi(planQtyStr)
@@ -144,7 +152,6 @@ func (h *Handler) Task3(c *gin.Context) {
 	})
 }
 
-// UpdateWarehouse handles updating a warehouse.
 func (h *Handler) UpdateWarehouse(c *gin.Context) {
 	var req struct {
 		ID             int    `json:"id" binding:"required"`
@@ -164,7 +171,6 @@ func (h *Handler) UpdateWarehouse(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Warehouse updated successfully"})
 }
 
-// UpdateContract handles updating a contract.
 func (h *Handler) UpdateContract(c *gin.Context) {
 	var req struct {
 		ContractNo    int     `json:"contract_no" binding:"required"`
@@ -181,7 +187,6 @@ func (h *Handler) UpdateContract(c *gin.Context) {
 		return
 	}
 
-	// Validate dates
 	if _, err := time.Parse("2006-01-02", req.StartDate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format. Use YYYY-MM-DD"})
 		return
@@ -199,7 +204,6 @@ func (h *Handler) UpdateContract(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Contract updated successfully"})
 }
 
-// UpdateDelivery handles updating a delivery.
 func (h *Handler) UpdateDelivery(c *gin.Context) {
 	var req struct {
 		WarehouseNo  int     `json:"warehouse_no" binding:"required"`
@@ -216,7 +220,6 @@ func (h *Handler) UpdateDelivery(c *gin.Context) {
 		return
 	}
 
-	// Validate date
 	if _, err := time.Parse("2006-01-02", req.ReceivedDate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid received_date format. Use YYYY-MM-DD"})
 		return
@@ -230,7 +233,6 @@ func (h *Handler) UpdateDelivery(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Delivery updated successfully"})
 }
 
-// CreateWarehouse handles creating a new warehouse.
 func (h *Handler) CreateWarehouse(c *gin.Context) {
 	var req struct {
 		ManagerSurname string `json:"manager_surname" binding:"required"`
@@ -250,7 +252,6 @@ func (h *Handler) CreateWarehouse(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Warehouse created successfully", "warehouse_no": warehouseNo})
 }
 
-// CreateContract handles creating a new contract.
 func (h *Handler) CreateContract(c *gin.Context) {
 	var req struct {
 		ContractNo    int     `json:"contract_no" binding:"required"`
@@ -267,7 +268,6 @@ func (h *Handler) CreateContract(c *gin.Context) {
 		return
 	}
 
-	// Validate dates
 	if _, err := time.Parse("2006-01-02", req.StartDate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format. Use YYYY-MM-DD"})
 		return
@@ -285,7 +285,6 @@ func (h *Handler) CreateContract(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Contract created successfully"})
 }
 
-// CreateDelivery handles creating a new delivery.
 func (h *Handler) CreateDelivery(c *gin.Context) {
 	var req struct {
 		WarehouseNo  int     `json:"warehouse_no" binding:"required"`
@@ -302,7 +301,6 @@ func (h *Handler) CreateDelivery(c *gin.Context) {
 		return
 	}
 
-	// Validate date
 	if _, err := time.Parse("2006-01-02", req.ReceivedDate); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid received_date format. Use YYYY-MM-DD"})
 		return
@@ -316,13 +314,11 @@ func (h *Handler) CreateDelivery(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Delivery created successfully"})
 }
 
-// Procedure handles the procedure page.
 func (h *Handler) Procedure(c *gin.Context) {
 	contractNoStr := c.DefaultQuery("contract_no", "")
 	partCode := c.DefaultQuery("part_code", "")
 
 	var result *domain.ContractSummary
-	var err error
 
 	procedureDescription := `Процедура p_contract_summary выполняет следующие действия:
 
@@ -330,7 +326,6 @@ func (h *Handler) Procedure(c *gin.Context) {
 2. Получает договорную цену (contract_price) из таблицы contracts для указанного номера договора и кода детали
 3. Если договор не найден, возвращает total_delivered = 0 и contract_price = NULL`
 
-	// If parameters are provided, call the procedure
 	if contractNoStr != "" && partCode != "" {
 		contractNo, parseErr := strconv.Atoi(contractNoStr)
 		if parseErr != nil {
@@ -342,6 +337,7 @@ func (h *Handler) Procedure(c *gin.Context) {
 			return
 		}
 
+		var err error
 		result, err = h.repo.CallContractSummary(c.Request.Context(), contractNo, partCode)
 		if err != nil {
 			c.HTML(http.StatusOK, "procedure.html", gin.H{

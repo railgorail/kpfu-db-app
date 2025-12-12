@@ -2,27 +2,28 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/railgorail/kpfu-db-app/internal/domain"
+	"gorm.io/gorm"
 )
 
-// Repository holds the database connection pool.
 type Repository struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	gormDB *gorm.DB
 }
 
-// New creates a new Repository.
 func New(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-// GetWarehouses retrieves all warehouses from the database.
+func NewWithGORM(db *pgxpool.Pool, gormDB *gorm.DB) *Repository {
+	return &Repository{db: db, gormDB: gormDB}
+}
+
 func (r *Repository) GetWarehouses(ctx context.Context) ([]domain.Warehouse, error) {
 	rows, err := r.db.Query(ctx, "SELECT warehouse_no, manager_surname FROM warehouses")
 	if err != nil {
@@ -41,7 +42,6 @@ func (r *Repository) GetWarehouses(ctx context.Context) ([]domain.Warehouse, err
 	return warehouses, nil
 }
 
-// GetContracts retrieves all contracts from the database.
 func (r *Repository) GetContracts(ctx context.Context) ([]domain.Contract, error) {
 	rows, err := r.db.Query(ctx, "SELECT contract_no, part_code, unit, start_date, end_date, plan_qty, contract_price FROM contracts")
 	if err != nil {
@@ -60,7 +60,6 @@ func (r *Repository) GetContracts(ctx context.Context) ([]domain.Contract, error
 	return contracts, nil
 }
 
-// GetDeliveries retrieves all deliveries from the database.
 func (r *Repository) GetDeliveries(ctx context.Context) ([]domain.Delivery, error) {
 	rows, err := r.db.Query(ctx, "SELECT warehouse_no, receipt_doc_no, contract_no, part_code, unit, qty, received_date FROM deliveries")
 	if err != nil {
@@ -114,12 +113,6 @@ func (r *Repository) GetView(ctx context.Context) ([]domain.View, error) {
 	return view, nil
 }
 func (r *Repository) GetTask1(ctx context.Context, price float64) ([]domain.Task1, error) {
-	// #region agent log
-	if f, err := os.OpenFile("/Users/rail/Documents/life/edu/kpfu/3/db/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		json.NewEncoder(f).Encode(map[string]interface{}{"location": "repository.go:113", "message": "GetTask1 entry", "data": map[string]interface{}{"price": price}, "timestamp": time.Now().UnixMilli(), "sessionId": "debug-session", "runId": "run1", "hypothesisId": "A"})
-		f.Close()
-	}
-	// #endregion
 	rows, err := r.db.Query(ctx, `
 		SELECT d.warehouse_no, d.part_code, d.receipt_doc_no, d.received_date, d.qty, d.contract_no, c.contract_price
 		FROM deliveries d
@@ -148,20 +141,23 @@ func (r *Repository) GetTask1(ctx context.Context, price float64) ([]domain.Task
 		if err != nil {
 			return nil, err
 		}
-		// #region agent log
-		if f, err := os.OpenFile("/Users/rail/Documents/life/edu/kpfu/3/db/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-			json.NewEncoder(f).Encode(map[string]interface{}{"location": "repository.go:142", "message": "GetTask1 row", "data": map[string]interface{}{"contract_no": t.ContractNo, "part_code": t.PartCode, "contract_price": t.ContractPrice}, "timestamp": time.Now().UnixMilli(), "sessionId": "debug-session", "runId": "run1", "hypothesisId": "A"})
-			f.Close()
-		}
-		// #endregion
 		task1 = append(task1, t)
 	}
-	// #region agent log
-	if f, err := os.OpenFile("/Users/rail/Documents/life/edu/kpfu/3/db/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		json.NewEncoder(f).Encode(map[string]interface{}{"location": "repository.go:144", "message": "GetTask1 exit", "data": map[string]interface{}{"result_count": len(task1)}, "timestamp": time.Now().UnixMilli(), "sessionId": "debug-session", "runId": "run1", "hypothesisId": "A"})
-		f.Close()
+	return task1, nil
+}
+
+func (r *Repository) ORMGetTask1(ctx context.Context, price float64) ([]domain.Task1, error) {
+	var task1 []domain.Task1
+	err := r.gormDB.WithContext(ctx).
+		Table("deliveries d").
+		Select("d.warehouse_no, d.part_code, d.receipt_doc_no, d.received_date, d.qty, d.contract_no, c.contract_price").
+		Joins("JOIN contracts c ON d.contract_no = c.contract_no").
+		Where("c.contract_price > ?", price).
+		Order("d.received_date").
+		Scan(&task1).Error
+	if err != nil {
+		return nil, err
 	}
-	// #endregion
 	return task1, nil
 }
 
@@ -242,13 +238,11 @@ func (r *Repository) GetTask3(ctx context.Context, planQty, deliveryQty int) ([]
 	return task3, nil
 }
 
-// UpdateWarehouse updates a warehouse in the database.
 func (r *Repository) UpdateWarehouse(ctx context.Context, warehouseNo int, managerSurname string) error {
 	_, err := r.db.Exec(ctx, "UPDATE warehouses SET manager_surname = $1 WHERE warehouse_no = $2", managerSurname, warehouseNo)
 	return err
 }
 
-// UpdateContract updates a contract in the database.
 func (r *Repository) UpdateContract(ctx context.Context, contractNo int, partCode string, unit string, startDate, endDate string, planQty, contractPrice float64) error {
 	_, err := r.db.Exec(ctx, `
 		UPDATE contracts 
@@ -258,21 +252,12 @@ func (r *Repository) UpdateContract(ctx context.Context, contractNo int, partCod
 	return err
 }
 
-// UpdateDelivery updates a delivery in the database.
 func (r *Repository) UpdateDelivery(ctx context.Context, warehouseNo, receiptDocNo int, contractNo int, partCode, unit string, qty float64, receivedDate string) error {
-	// #region agent log
-	if f, err := os.OpenFile("/Users/rail/Documents/life/edu/kpfu/3/db/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
-		json.NewEncoder(f).Encode(map[string]interface{}{"location": "repository.go:241", "message": "UpdateDelivery entry", "data": map[string]interface{}{"warehouseNo": warehouseNo, "receiptDocNo": receiptDocNo, "contractNo": contractNo, "partCode": partCode}, "timestamp": time.Now().UnixMilli(), "sessionId": "debug-session", "runId": "run1", "hypothesisId": "C"})
-		f.Close()
-	}
-	// #endregion
-	// Parse the received date
 	parsedDate, err := time.Parse("2006-01-02", receivedDate)
 	if err != nil {
 		return fmt.Errorf("invalid date format: %w", err)
 	}
 
-	// Check if the receivedDate is within the contract's date interval
 	var startDate, endDate time.Time
 	err = r.db.QueryRow(ctx, `
 		SELECT start_date, end_date 
@@ -280,29 +265,14 @@ func (r *Repository) UpdateDelivery(ctx context.Context, warehouseNo, receiptDoc
 		WHERE contract_no = $1 AND part_code = $2
 	`, contractNo, partCode).Scan(&startDate, &endDate)
 	if err != nil {
-		// #region agent log
-		if f, err2 := os.OpenFile("/Users/rail/Documents/life/edu/kpfu/3/db/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err2 == nil {
-			json.NewEncoder(f).Encode(map[string]interface{}{"location": "repository.go:256", "message": "UpdateDelivery contract not found", "data": map[string]interface{}{"contractNo": contractNo, "partCode": partCode, "error": err.Error()}, "timestamp": time.Now().UnixMilli(), "sessionId": "debug-session", "runId": "run1", "hypothesisId": "C"})
-			f.Close()
-		}
-		// #endregion
 		return fmt.Errorf("contract not found: %w", err)
 	}
-	// #region agent log
-	if f, err2 := os.OpenFile("/Users/rail/Documents/life/edu/kpfu/3/db/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err2 == nil {
-		json.NewEncoder(f).Encode(map[string]interface{}{"location": "repository.go:258", "message": "UpdateDelivery contract found", "data": map[string]interface{}{"contractNo": contractNo, "partCode": partCode, "startDate": startDate.Format("2006-01-02"), "endDate": endDate.Format("2006-01-02")}, "timestamp": time.Now().UnixMilli(), "sessionId": "debug-session", "runId": "run1", "hypothesisId": "C"})
-		f.Close()
-	}
-	// #endregion
-	fmt.Println(startDate, endDate, parsedDate)
 
-	// Verify that receivedDate is within the contract date interval
 	if parsedDate.Before(startDate) || parsedDate.After(endDate) {
 		return fmt.Errorf("received_date %s is outside the contract date interval [%s, %s]",
 			receivedDate, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
 	}
 
-	// Update the delivery
 	_, err = r.db.Exec(ctx, `
 		UPDATE deliveries 
 		SET contract_no = $1, part_code = $2, unit = $3, qty = $4, received_date = $5 
@@ -311,14 +281,12 @@ func (r *Repository) UpdateDelivery(ctx context.Context, warehouseNo, receiptDoc
 	return err
 }
 
-// CreateWarehouse creates a new warehouse in the database.
 func (r *Repository) CreateWarehouse(ctx context.Context, managerSurname string) (int, error) {
 	var warehouseNo int
 	err := r.db.QueryRow(ctx, "INSERT INTO warehouses (manager_surname) VALUES ($1) RETURNING warehouse_no", managerSurname).Scan(&warehouseNo)
 	return warehouseNo, err
 }
 
-// CreateContract creates a new contract in the database.
 func (r *Repository) CreateContract(ctx context.Context, contractNo int, partCode string, unit string, startDate, endDate string, planQty, contractPrice float64) error {
 	_, err := r.db.Exec(ctx, `
 		INSERT INTO contracts (contract_no, part_code, unit, start_date, end_date, plan_qty, contract_price)
@@ -327,15 +295,12 @@ func (r *Repository) CreateContract(ctx context.Context, contractNo int, partCod
 	return err
 }
 
-// CreateDelivery creates a new delivery in the database.
 func (r *Repository) CreateDelivery(ctx context.Context, warehouseNo, receiptDocNo int, contractNo int, partCode, unit string, qty float64, receivedDate string) error {
-	// Parse the received date
 	parsedDate, err := time.Parse("2006-01-02", receivedDate)
 	if err != nil {
 		return fmt.Errorf("invalid date format: %w", err)
 	}
 
-	// Check if the receivedDate is within the contract's date interval
 	var startDate, endDate time.Time
 	err = r.db.QueryRow(ctx, `
 		SELECT start_date, end_date 
@@ -345,9 +310,7 @@ func (r *Repository) CreateDelivery(ctx context.Context, warehouseNo, receiptDoc
 	if err != nil {
 		return fmt.Errorf("contract not found: %w", err)
 	}
-	fmt.Println(startDate, endDate, parsedDate)
 
-	// Verify that receivedDate is within the contract date interval
 	if parsedDate.Before(startDate) || parsedDate.After(endDate) {
 		return fmt.Errorf("received_date %s is outside the contract date interval [%s, %s]",
 			receivedDate, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
@@ -364,7 +327,6 @@ func (r *Repository) CallContractSummary(ctx context.Context, contractNo int, pa
 	result.ContractNo = contractNo
 	result.PartCode = partCode
 
-	// Escape single quotes in partCode for SQL
 	escapedPartCode := fmt.Sprintf("'%s'", strings.ReplaceAll(partCode, "'", "''"))
 	query := fmt.Sprintf(`
 		DO $$

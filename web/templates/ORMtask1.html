@@ -1,0 +1,68 @@
+{{define "ORMtask1.html"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/view">View</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/1">Task 1</a></li>
+                <li class="nav-item"><a class="nav-link" href="/orm/task/1">ORM Task 1</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/2">Task 2</a></li>
+                <li class="nav-item"><a class="nav-link" href="/task/3">Task 3</a></li>
+                <li class="nav-item"><a class="nav-link" href="/procedure">Procedure</a></li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h2>ORM Task 1</h2>
+        <div class="alert alert-info">
+            <strong>Using GORM ORM</strong> - Same query as regular Task 1 but implemented with GORM
+        </div>
+        <form action="/orm/task/1" method="get" class="form-inline mb-3">
+            <div class="form-group">
+                <label for="price" class="mr-2">Contract Price greater than:</label>
+                <input type="number" name="price" id="price" class="form-control mr-2" value="{{ .Price }}" step="any">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Warehouse No</th>
+                    <th>Part Code</th>
+                    <th>Receipt Doc No</th>
+                    <th>Received Date</th>
+                    <th>Qty</th>
+                    <th>Contract No</th>
+                    <th>Contract Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Task1}}
+                <tr>
+                    <td>{{.WarehouseNo}}</td>
+                    <td>{{.PartCode}}</td>
+                    <td>{{.ReceiptDocNo}}</td>
+                    <td>{{.ReceivedDate.Format "2006-01-02"}}</td>
+                    <td>{{.Qty}}</td>
+                    <td>{{.ContractNo}}</td>
+                    <td>{{.ContractPrice}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
+{{end}}
