@@ -1,16 +1,2 @@
 .DS_Store
 .vscode/settings.json
-[contract_no, part_code, plan_qty, contract_price, start_date, end_date, warehouse_no, manager_surname](
-  (
-    (
-      [contract_no, part_code, warehouse_no](deliveries)
-      -
-      [contract_no, part_code, warehouse_no](*qty ≤ 50(deliveries))
-    )
-    & *plan_qty > 1000(contracts)
-    & warehouses
-  )
-)
-
-[contract_no, part_code, plan_qty, contract_price, start_date, end_date]
-([contract_no, part_code, plan_qty, contract_price, start_date, end_date](σ plan_qty>1000(contracts))*[warehouse_no](warehouses-[warehouse_no]([contract_no, part_code, warehouse_no, qty](σ qty<=50(deliveries)))))
