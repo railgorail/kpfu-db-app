@@ -354,3 +354,18 @@ func (r *Repository) CallContractSummary(ctx context.Context, contractNo int, pa
 
 	return &result, nil
 }
+
+func (r *Repository) DeleteWarehouse(ctx context.Context, warehouseNo int) error {
+	_, err := r.db.Exec(ctx, "DELETE FROM warehouses WHERE warehouse_no = $1", warehouseNo)
+	return err
+}
+
+func (r *Repository) DeleteContract(ctx context.Context, contractNo int, partCode string) error {
+	_, err := r.db.Exec(ctx, "DELETE FROM contracts WHERE contract_no = $1 AND part_code = $2", contractNo, partCode)
+	return err
+}
+
+func (r *Repository) DeleteDelivery(ctx context.Context, warehouseNo int, receiptDocNo int) error {
+	_, err := r.db.Exec(ctx, "DELETE FROM deliveries WHERE warehouse_no = $1 AND receipt_doc_no = $2", warehouseNo, receiptDocNo)
+	return err
+}

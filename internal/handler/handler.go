@@ -34,6 +34,9 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	api.POST("/warehouses", h.CreateWarehouse)
 	api.POST("/contracts", h.CreateContract)
 	api.POST("/deliveries", h.CreateDelivery)
+	api.DELETE("/warehouses", h.DeleteWarehouse)
+	api.DELETE("/contracts", h.DeleteContract)
+	api.DELETE("/deliveries", h.DeleteDelivery)
 
 	r.GET("/procedure", h.Procedure)
 	r.GET("/orm/task/1", h.ORMTask1)
@@ -312,6 +315,53 @@ func (h *Handler) CreateDelivery(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Delivery created successfully"})
+}
+
+func (h *Handler) DeleteWarehouse(c *gin.Context) {
+	var req struct {
+		ID int `json:"id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.repo.DeleteWarehouse(c.Request.Context(), req.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Warehouse deleted successfully"})
+}
+
+func (h *Handler) DeleteContract(c *gin.Context) {
+	var req struct {
+		ContractNo int    `json:"contract_no" binding:"required"`
+		PartCode   string `json:"part_code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.repo.DeleteContract(c.Request.Context(), req.ContractNo, req.PartCode); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Contract deleted successfully"})
+}
+
+func (h *Handler) DeleteDelivery(c *gin.Context) {
+	var req struct {
+		WarehouseNo  int `json:"warehouse_no" binding:"required"`
+		ReceiptDocNo int `json:"receipt_doc_no" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.repo.DeleteDelivery(c.Request.Context(), req.WarehouseNo, req.ReceiptDocNo); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Delivery deleted successfully"})
 }
 
 func (h *Handler) Procedure(c *gin.Context) {

@@ -103,6 +103,9 @@
                     <td class="readonly-cell">{{.WarehouseNo}}</td>
                     <td class="editable-cell" contenteditable="true" data-field="manager_surname"
                         data-original="{{.ManagerSurname}}">{{.ManagerSurname}}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteWarehouse(this)">Delete</button>
+                    </td>
                 </tr>
                 {{end}}
             </tbody>
@@ -139,6 +142,9 @@
                         data-type="number">{{.PlanQty}}</td>
                     <td class="editable-cell" contenteditable="true" data-field="contract_price"
                         data-original="{{.ContractPrice}}" data-type="number">{{.ContractPrice}}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteContract(this)">Delete</button>
+                    </td>
                 </tr>
                 {{end}}
             </tbody>
@@ -175,6 +181,9 @@
                     <td class="editable-cell" contenteditable="true" data-field="received_date"
                         data-original="{{.ReceivedDate.Format " 2006-01-02"}}" data-type="date">{{.ReceivedDate.Format
                         "2006-01-02"}}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteDelivery(this)">Delete</button>
+                    </td>
                 </tr>
                 {{end}}
             </tbody>
@@ -529,6 +538,422 @@
                     showStatus('Error creating delivery: ' + error.message, 'danger');
                     button.disabled = false;
                     button.textContent = 'Save';
+                }
+            };
+        })();
+    </script>
+    <script>
+        (function () {
+            let saveTimeout = null;
+            const saveStatus = document.getElementById('saveStatus');
+
+            function showStatus(message, type = 'info') {
+                saveStatus.className = `save-status alert alert-${type}`;
+                saveStatus.textContent = message;
+                saveStatus.style.display = 'block';
+                setTimeout(() => {
+                    saveStatus.style.display = 'none';
+                }, 3000);
+            }
+
+            function getRowData(row) {
+                const table = row.dataset.table;
+                const data = { table };
+
+                if (table === 'warehouses') {
+                    data.id = parseInt(row.dataset.id);
+                } else if (table === 'contracts') {
+                    data.contract_no = parseInt(row.dataset.contractNo);
+                    data.part_code = row.dataset.partCode;
+                } else if (table === 'deliveries') {
+                    data.warehouse_no = parseInt(row.dataset.warehouseNo);
+                    data.receipt_doc_no = parseInt(row.dataset.receiptDocNo);
+                }
+
+                const cells = row.querySelectorAll('.editable-cell');
+                cells.forEach(cell => {
+                    const field = cell.dataset.field;
+                    let value = cell.textContent.trim();
+
+                    if (cell.dataset.type === 'number') {
+                        value = parseFloat(value);
+                    } else if (cell.dataset.type === 'date') {
+                        // Keep date as string, backend will parse it
+                    }
+
+                    data[field] = value;
+                });
+
+                return data;
+            }
+
+            async function saveRow(row) {
+                const cell = row.querySelector('.editable-cell.editing');
+                if (!cell) return;
+
+                cell.classList.remove('editing');
+                cell.classList.add('saving');
+
+                const data = getRowData(row);
+                const table = data.table;
+                delete data.table;
+
+                try {
+                    const response = await fetch(`/api/${table}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to save');
+                    }
+
+                    cell.classList.remove('saving');
+                    cell.classList.add('saved');
+                    cell.dataset.original = cell.textContent.trim();
+
+                    setTimeout(() => {
+                        cell.classList.remove('saved');
+                    }, 1000);
+
+                    showStatus('Changes saved successfully', 'success');
+                } catch (error) {
+                    cell.classList.remove('saving');
+                    cell.classList.add('error');
+                    showStatus('Error saving: ' + error.message, 'danger');
+
+                    // Revert to original value
+                    setTimeout(() => {
+                        cell.textContent = cell.dataset.original;
+                        cell.classList.remove('error');
+                    }, 2000);
+                }
+            }
+
+            // Handle cell editing
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('focus', function () {
+                    this.classList.add('editing');
+                    this.dataset.original = this.textContent.trim();
+                });
+
+                cell.addEventListener('blur', function () {
+                    const row = this.closest('tr');
+                    if (this.textContent.trim() !== this.dataset.original) {
+                        if (saveTimeout) {
+                            clearTimeout(saveTimeout);
+                        }
+                        saveTimeout = setTimeout(() => saveRow(row), 500);
+                    } else {
+                        this.classList.remove('editing');
+                    }
+                });
+
+                cell.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    } else if (e.key === 'Escape') {
+                        this.textContent = this.dataset.original;
+                        this.blur();
+                    }
+                });
+            });
+
+            // Handle paste events
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    this.textContent = text;
+                });
+            });
+
+            // Add new warehouse row
+            window.addNewWarehouse = function () {
+                const tbody = document.querySelector('#warehousesTable tbody');
+                const row = document.createElement('tr');
+                row.className = 'new-row';
+                row.innerHTML = `
+                    <td><em>New</em></td>
+                    <td><input type="text" class="new-manager-surname" placeholder="Manager Surname" required></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="saveNewWarehouse(this)">Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelNewRow(this)">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                row.querySelector('.new-manager-surname').focus();
+            };
+
+            // Add new contract row
+            window.addNewContract = function () {
+                const tbody = document.querySelector('#contractsTable tbody');
+                const row = document.createElement('tr');
+                row.className = 'new-row';
+                const today = new Date().toISOString().split('T')[0];
+                row.innerHTML = `
+                    <td><input type="number" class="new-contract-no" placeholder="Contract No" required></td>
+                    <td><input type="text" class="new-part-code" placeholder="Part Code" required></td>
+                    <td>
+                        <select class="new-unit" required>
+                            <option value="">Select unit</option>
+                            <option value="pcs">pcs</option>
+                            <option value="kg">kg</option>
+                            <option value="m">m</option>
+                            <option value="set">set</option>
+                        </select>
+                    </td>
+                    <td><input type="date" class="new-start-date" required></td>
+                    <td><input type="date" class="new-end-date" required></td>
+                    <td><input type="number" step="0.01" class="new-plan-qty" placeholder="Plan Qty" required></td>
+                    <td><input type="number" step="0.01" class="new-contract-price" placeholder="Price" required></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="saveNewContract(this)">Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelNewRow(this)">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                row.querySelector('.new-contract-no').focus();
+            };
+
+            // Add new delivery row
+            window.addNewDelivery = function () {
+                const tbody = document.querySelector('#deliveriesTable tbody');
+                const row = document.createElement('tr');
+                row.className = 'new-row';
+                const today = new Date().toISOString().split('T')[0];
+                row.innerHTML = `
+                    <td><input type="number" class="new-warehouse-no" placeholder="Warehouse No" required></td>
+                    <td><input type="number" class="new-receipt-doc-no" placeholder="Receipt Doc No" required></td>
+                    <td><input type="number" class="new-contract-no" placeholder="Contract No" required></td>
+                    <td><input type="text" class="new-part-code" placeholder="Part Code" required></td>
+                    <td>
+                        <select class="new-unit" required>
+                            <option value="">Select unit</option>
+                            <option value="pcs">pcs</option>
+                            <option value="kg">kg</option>
+                            <option value="m">m</option>
+                            <option value="set">set</option>
+                        </select>
+                    </td>
+                    <td><input type="number" step="0.01" class="new-qty" placeholder="Qty" required></td>
+                    <td><input type="date" class="new-received-date" value="${today}" required></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="saveNewDelivery(this)">Save</button>
+                        <button class="btn btn-sm btn-secondary" onclick="cancelNewRow(this)">Cancel</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                row.querySelector('.new-warehouse-no').focus();
+            };
+
+            // Cancel new row
+            window.cancelNewRow = function (button) {
+                const row = button.closest('tr');
+                row.remove();
+            };
+
+            // Save new warehouse
+            window.saveNewWarehouse = async function (button) {
+                const row = button.closest('tr');
+                const managerSurname = row.querySelector('.new-manager-surname').value.trim();
+
+                if (!managerSurname) {
+                    showStatus('Manager surname is required', 'danger');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/api/warehouses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ manager_surname: managerSurname })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to create warehouse');
+                    }
+
+                    const result = await response.json();
+                    showStatus('Warehouse created successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } catch (error) {
+                    showStatus('Error creating warehouse: ' + error.message, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Save';
+                }
+            };
+
+            // Save new contract
+            window.saveNewContract = async function (button) {
+                const row = button.closest('tr');
+                const data = {
+                    contract_no: parseInt(row.querySelector('.new-contract-no').value),
+                    part_code: row.querySelector('.new-part-code').value.trim(),
+                    unit: row.querySelector('.new-unit').value,
+                    start_date: row.querySelector('.new-start-date').value,
+                    end_date: row.querySelector('.new-end-date').value,
+                    plan_qty: parseFloat(row.querySelector('.new-plan-qty').value),
+                    contract_price: parseFloat(row.querySelector('.new-contract-price').value)
+                };
+
+                if (!data.contract_no || !data.part_code || !data.unit || !data.start_date ||
+                    !data.end_date || !data.plan_qty || !data.contract_price) {
+                    showStatus('All fields are required', 'danger');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/api/contracts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to create contract');
+                    }
+
+                    showStatus('Contract created successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } catch (error) {
+                    showStatus('Error creating contract: ' + error.message, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Save';
+                }
+            };
+
+            // Save new delivery
+            window.saveNewDelivery = async function (button) {
+                const row = button.closest('tr');
+                const data = {
+                    warehouse_no: parseInt(row.querySelector('.new-warehouse-no').value),
+                    receipt_doc_no: parseInt(row.querySelector('.new-receipt-doc-no').value),
+                    contract_no: parseInt(row.querySelector('.new-contract-no').value),
+                    part_code: row.querySelector('.new-part-code').value.trim(),
+                    unit: row.querySelector('.new-unit').value,
+                    qty: parseFloat(row.querySelector('.new-qty').value),
+                    received_date: row.querySelector('.new-received-date').value
+                };
+
+                if (!data.warehouse_no || !data.receipt_doc_no || !data.contract_no || !data.part_code ||
+                    !data.unit || !data.qty || !data.received_date) {
+                    showStatus('All fields are required', 'danger');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch('/api/deliveries', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error || 'Failed to create delivery');
+                    }
+
+                    showStatus('Delivery created successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } catch (error) {
+                    showStatus('Error creating delivery: ' + error.message, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Save';
+                }
+            };
+
+            window.deleteWarehouse = async function (btn) {
+                const row = btn.closest('tr');
+                const id = row.dataset.id;
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+                try {
+                    const response = await fetch(`/api/warehouses`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: parseInt(id) })
+                    });
+                    if (!response.ok) throw new Error(await response.text() || 'Delete failed');
+                    showStatus('Deleted successfully', 'success');
+                    row.remove();
+                    location.reload();
+                } catch (error) {
+                    showStatus('Error deleting: ' + error.message, 'danger');
+                    btn.disabled = false;
+                    btn.textContent = 'Delete';
+                }
+            };
+            window.deleteContract = async function (btn) {
+                const row = btn.closest('tr');
+                const contractNo = row.dataset.contractNo;
+                const partCode = row.dataset.partCode;
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+                try {
+                    const response = await fetch(`/api/contracts`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contract_no: parseInt(contractNo), part_code: partCode })
+                    });
+                    if (!response.ok) throw new Error(await response.text() || 'Delete failed');
+                    showStatus('Deleted successfully', 'success');
+                    row.remove();
+                    location.reload();
+                } catch (error) {
+                    showStatus('Error deleting: ' + error.message, 'danger');
+                    btn.disabled = false;
+                    btn.textContent = 'Delete';
+                }
+            };
+            window.deleteDelivery = async function (btn) {
+                const row = btn.closest('tr');
+                const warehouseNo = row.dataset.warehouseNo;
+                const receiptDocNo = row.dataset.receiptDocNo;
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+                try {
+                    const response = await fetch(`/api/deliveries`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ warehouse_no: parseInt(warehouseNo), receipt_doc_no: parseInt(receiptDocNo) })
+                    });
+                    if (!response.ok) throw new Error(await response.text() || 'Delete failed');
+                    showStatus('Deleted successfully', 'success');
+                    row.remove();
+                    location.reload();
+                } catch (error) {
+                    showStatus('Error deleting: ' + error.message, 'danger');
+                    btn.disabled = false;
+                    btn.textContent = 'Delete';
                 }
             };
         })();
