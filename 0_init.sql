@@ -1,6 +1,6 @@
 /*
 
-16а:Склад <–>> 13б:Учет поставок деталей <<–> 09в:Поставки деталей.
+16а:Склад <–>> 13б:Учет поставок деталей <<–> 09в:договоры.
 
 Склады 
 •	номер склада; PK
@@ -206,7 +206,8 @@ CREATE VIEW full_deliveries_view AS
 		ON d.warehouse_no = w.warehouse_no
 	LEFT JOIN contracts c
 		ON d.contract_no = c.contract_no
-	AND d.part_code = c.part_code;
+	AND d.part_code = c.part_code
+    ORDER BY d.warehouse_no, d.receipt_doc_no;
     
 -- filling with example data
 INSERT INTO warehouses (manager_surname) VALUES
