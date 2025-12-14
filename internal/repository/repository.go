@@ -147,17 +147,30 @@ func (r *Repository) GetTask1(ctx context.Context, price float64) ([]domain.Task
 }
 
 func (r *Repository) ORMGetTask1(ctx context.Context, price float64) ([]domain.Task1, error) {
-	var task1 []domain.Task1
+	var deliveries []domain.Delivery
 	err := r.gormDB.WithContext(ctx).
-		Table("deliveries d").
-		Select("d.warehouse_no, d.part_code, d.receipt_doc_no, d.received_date, d.qty, d.contract_no, c.contract_price").
-		Joins("JOIN contracts c ON d.contract_no = c.contract_no").
-		Where("c.contract_price > ?", price).
-		Order("d.received_date").
-		Scan(&task1).Error
+    Preload("Contract").
+    Order("received_date").
+    Find(&deliveries).Error
 	if err != nil {
 		return nil, err
 	}
+
+	var task1 []domain.Task1
+	for _, d := range deliveries {
+		if d.Contract.ContractPrice > price {
+			task1 = append(task1, domain.Task1{
+				WarehouseNo:   d.WarehouseNo,
+				PartCode:      d.PartCode,
+				ReceiptDocNo:  d.ReceiptDocNo,
+				ReceivedDate:  d.ReceivedDate,
+				Qty:           d.Qty,
+				ContractNo:    d.ContractNo,
+				ContractPrice: d.Contract.ContractPrice,
+			})
+		}
+	}
+	
 	return task1, nil
 }
 

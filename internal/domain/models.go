@@ -28,6 +28,8 @@ type Delivery struct {
 	Unit         string    `json:"unit"`
 	Qty          float64   `json:"qty"`
 	ReceivedDate time.Time `json:"received_date"`
+
+	Contract     Contract `gorm:"foreignKey:ContractNo;references:ContractNo"`
 }
 
 type View struct {
