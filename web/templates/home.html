@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .Title }}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
         .editable-cell {
             cursor: cell;
@@ -87,110 +90,143 @@
     </nav>
     <div class="save-status alert alert-info" id="saveStatus"></div>
     <div class="container mt-4">
-        <h3><a href="https://github.com/railgorail/kpfu-db-app">https://github.com/railgorail/kpfu-db-app</a></h3>
-        <h2>Warehouses</h2>
-        <button class="btn btn-primary mb-2" onclick="addNewWarehouse()">Add New Warehouse</button>
-        <table class="table table-bordered" id="warehousesTable">
-            <thead>
-                <tr>
-                    <th>Warehouse No</th>
-                    <th>Manager Surname</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Warehouses}}
-                <tr data-table="warehouses" data-id="{{.WarehouseNo}}">
-                    <td class="readonly-cell">{{.WarehouseNo}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="manager_surname"
-                        data-original="{{.ManagerSurname}}">{{.ManagerSurname}}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="deleteWarehouse(this)">Delete</button>
-                    </td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
 
-        <h2>Contracts</h2>
-        <button class="btn btn-primary mb-2" onclick="addNewContract()">Add New Contract</button>
-        <table class="table table-bordered" id="contractsTable">
-            <thead>
-                <tr>
-                    <th>Contract No</th>
-                    <th>Part Code</th>
-                    <th>Unit</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Plan Qty</th>
-                    <th>Contract Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Contracts}}
-                <tr data-table="contracts" data-contract-no="{{.ContractNo}}" data-part-code="{{.PartCode}}">
-                    <td class="readonly-cell">{{.ContractNo}}</td>
-                    <td class="readonly-cell">{{.PartCode}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="unit" data-original="{{.Unit}}">
-                        {{.Unit}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="start_date"
-                        data-original="{{.StartDate.Format " 2006-01-02"}}" data-type="date">{{.StartDate.Format
-                        "2006-01-02"}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="end_date"
-                        data-original="{{.EndDate.Format " 2006-01-02"}}" data-type="date">{{.EndDate.Format
-                        "2006-01-02"}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="plan_qty" data-original="{{.PlanQty}}"
-                        data-type="number">{{.PlanQty}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="contract_price"
-                        data-original="{{.ContractPrice}}" data-type="number">{{.ContractPrice}}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="deleteContract(this)">Delete</button>
-                    </td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs" id="tableTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="warehouses-tab" data-toggle="tab" href="#warehouses" role="tab"
+                    aria-controls="warehouses" aria-selected="true">Warehouses</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="contracts-tab" data-toggle="tab" href="#contracts" role="tab"
+                    aria-controls="contracts" aria-selected="false">Contracts</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="deliveries-tab" data-toggle="tab" href="#deliveries" role="tab"
+                    aria-controls="deliveries" aria-selected="false">Deliveries</a>
+            </li>
+        </ul>
 
-        <h2>Deliveries</h2>
-        <button class="btn btn-primary mb-2" onclick="addNewDelivery()">Add New Delivery</button>
-        <table class="table table-bordered" id="deliveriesTable">
-            <thead>
-                <tr>
-                    <th>Warehouse No</th>
-                    <th>Receipt Doc No</th>
-                    <th>Contract No</th>
-                    <th>Part Code</th>
-                    <th>Unit</th>
-                    <th>Qty</th>
-                    <th>Received Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Deliveries}}
-                <tr data-table="deliveries" data-warehouse-no="{{.WarehouseNo}}"
-                    data-receipt-doc-no="{{.ReceiptDocNo}}">
-                    <td class="readonly-cell">{{.WarehouseNo}}</td>
-                    <td class="readonly-cell">{{.ReceiptDocNo}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="contract_no"
-                        data-original="{{.ContractNo}}" data-type="number">{{.ContractNo}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="part_code"
-                        data-original="{{.PartCode}}">{{.PartCode}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="unit" data-original="{{.Unit}}">
-                        {{.Unit}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="qty" data-original="{{.Qty}}"
-                        data-type="number">{{.Qty}}</td>
-                    <td class="editable-cell" contenteditable="true" data-field="received_date"
-                        data-original="{{.ReceivedDate.Format " 2006-01-02"}}" data-type="date">{{.ReceivedDate.Format
-                        "2006-01-02"}}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="deleteDelivery(this)">Delete</button>
-                    </td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="tableTabContent">
+            <!-- Warehouses Tab -->
+            <div class="tab-pane fade show active" id="warehouses" role="tabpanel" aria-labelledby="warehouses-tab">
+                <table class="table table-bordered" id="warehousesTable">
+                    <thead>
+                        <tr>
+                            <th>Warehouse No</th>
+                            <th>Manager Surname</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Warehouses}}
+                        <tr data-table="warehouses" data-id="{{.WarehouseNo}}">
+                            <td class="readonly-cell">{{.WarehouseNo}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="manager_surname"
+                                data-original="{{.ManagerSurname}}">{{.ManagerSurname}}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteWarehouse(this)">Delete</button>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <button class="btn btn-primary" onclick="addNewWarehouse()">Add New Warehouse</button>
+            </div>
+
+            <!-- Contracts Tab -->
+            <div class="tab-pane fade" id="contracts" role="tabpanel" aria-labelledby="contracts-tab">
+                <table class="table table-bordered" id="contractsTable">
+                    <thead>
+                        <tr>
+                            <th>Contract No</th>
+                            <th>Part Code</th>
+                            <th>Unit</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Plan Qty</th>
+                            <th>Contract Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Contracts}}
+                        <tr data-table="contracts" data-contract-no="{{.ContractNo}}" data-part-code="{{.PartCode}}">
+                            <td class="readonly-cell">{{.ContractNo}}</td>
+                            <td class="readonly-cell">{{.PartCode}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="unit"
+                                data-original="{{.Unit}}">
+                                {{.Unit}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="start_date"
+                                data-original="{{.StartDate.Format " 2006-01-02"}}" data-type="date">{{.StartDate.Format
+                                "2006-01-02"}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="end_date"
+                                data-original="{{.EndDate.Format " 2006-01-02"}}" data-type="date">{{.EndDate.Format
+                                "2006-01-02"}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="plan_qty"
+                                data-original="{{.PlanQty}}" data-type="number">{{.PlanQty}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="contract_price"
+                                data-original="{{.ContractPrice}}" data-type="number">{{.ContractPrice}}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteContract(this)">Delete</button>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <button class="btn btn-primary" onclick="addNewContract()">Add New Contract</button>
+            </div>
+
+            <!-- Deliveries Tab -->
+            <div class="tab-pane fade" id="deliveries" role="tabpanel" aria-labelledby="deliveries-tab">
+                <table class="table table-bordered" id="deliveriesTable">
+                    <thead>
+                        <tr>
+                            <th>Warehouse No</th>
+                            <th>Receipt Doc No</th>
+                            <th>Contract No</th>
+                            <th>Part Code</th>
+                            <th>Unit</th>
+                            <th>Qty</th>
+                            <th>Received Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Deliveries}}
+                        <tr data-table="deliveries" data-warehouse-no="{{.WarehouseNo}}"
+                            data-receipt-doc-no="{{.ReceiptDocNo}}">
+                            <td class="readonly-cell">{{.WarehouseNo}}</td>
+                            <td class="readonly-cell">{{.ReceiptDocNo}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="contract_no"
+                                data-original="{{.ContractNo}}" data-type="number">{{.ContractNo}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="part_code"
+                                data-original="{{.PartCode}}">{{.PartCode}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="unit"
+                                data-original="{{.Unit}}">
+                                {{.Unit}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="qty" data-original="{{.Qty}}"
+                                data-type="number">{{.Qty}}</td>
+                            <td class="editable-cell" contenteditable="true" data-field="received_date"
+                                data-original="{{.ReceivedDate.Format " 2006-01-02"}}" data-type="date">
+                                {{.ReceivedDate.Format
+                                "2006-01-02"}}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteDelivery(this)">Delete</button>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <button class="btn btn-primary" onclick="addNewDelivery()">Add New Delivery</button>
+            </div>
+        </div>
     </div>
+    
     <div class="container mt-4">
-        <img src="/static/zall.png" alt="zall">
+        <h6>source: <a href="https://github.com/railgorail/kpfu-db-app">https://github.com/railgorail/kpfu-db-app</a></h6>
+        <img src="/static/zall.png" alt="zall" width="800">
     </div>
     <script>
         (function () {

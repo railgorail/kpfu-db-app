@@ -22,19 +22,22 @@
 •	код покупной детали;
 •	единица измерения;
 •	количество покупных деталей;
-•	дата поступления.,=
+•	дата поступления.
 */
 
 BEGIN;
 
-DROP TABLE IF EXISTS deliveries_audit CASCADE;
 DROP TABLE IF EXISTS deliveries CASCADE;
 DROP TABLE IF EXISTS contracts CASCADE;
 DROP TABLE IF EXISTS warehouses CASCADE;
 DROP TABLE IF EXISTS proc_result CASCADE;
 
 DROP FUNCTION IF EXISTS fn_cascade_delete_deliveries() CASCADE;
-DROP FUNCTION IF EXISTS fn_log_delivery_insert() CASCADE;
+DROP TRIGGER IF EXISTS trg_deliveries_after_insert ON deliveries;
+
+DROP FUNCTION IF EXISTS fn_check_received_date() CASCADE;
+DROP TRIGGER IF EXISTS trg_check_received_date ON deliveries;
+
 DROP PROCEDURE IF EXISTS p_contract_summary(INT, TEXT, OUT DECIMAL(10,2), OUT DECIMAL(10,2));
 DROP FUNCTION IF EXISTS fn_warehouse_count(fn_manager_surname text);
 DROP FUNCTION IF EXISTS fn_deliveries_in_range(DATE, DATE);
@@ -69,56 +72,43 @@ CREATE TABLE deliveries (
     qty                  DECIMAL(10,2) NOT NULL CHECK (qty > 0),
     received_date        DATE NOT NULL DEFAULT CURRENT_DATE,
     PRIMARY KEY (warehouse_no, receipt_doc_no),
-    CONSTRAINT fk_delivery_warehouse FOREIGN KEY (warehouse_no) 
+    CONSTRAINT fk_delivery_warehouse FOREIGN KEY (warehouse_no)
         REFERENCES warehouses(warehouse_no)
-        ON DELETE CASCADE ON UPDATE cascade,
+        ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_delivery_contract FOREIGN KEY (contract_no, part_code) 
         REFERENCES contracts(contract_no, part_code)
 );
 
--- Таблица аудита для триггеров
-CREATE TABLE deliveries_audit (
-    audit_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    warehouse_no    INT,
-    receipt_doc_no  INT,
-    contract_no     INT,
-    part_code       TEXT,
-    qty             DECIMAL(10,2),
-    received_date   DATE,
-    action          TEXT,
-    action_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
--- Триггерная функция — ручной каскад удаления поставок при удалении договора
-CREATE OR REPLACE FUNCTION fn_cascade_delete_deliveries() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION fn_check_received_date()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_start_date DATE;
+    v_end_date   DATE;
 BEGIN
-    DELETE FROM deliveries 
-    WHERE contract_no = OLD.contract_no AND part_code = OLD.part_code;
-    RETURN OLD;
-END;
-$$;
+    SELECT start_date, end_date
+    INTO v_start_date, v_end_date
+    FROM contracts
+    WHERE contract_no = NEW.contract_no
+      AND part_code = NEW.part_code;
 
-DROP TRIGGER IF EXISTS trg_contracts_after_delete ON contracts;
-CREATE TRIGGER trg_contracts_after_delete
-AFTER DELETE ON contracts
-FOR EACH ROW
-EXECUTE FUNCTION fn_cascade_delete_deliveries();
+    IF NEW.received_date < v_start_date
+       OR NEW.received_date > v_end_date THEN
+        RAISE EXCEPTION
+            'received_date (%) must be between % and %',
+            NEW.received_date, v_start_date, v_end_date;
+    END IF;
 
--- Триггер: логирование вставок в deliveries (AFTER INSERT)
-CREATE OR REPLACE FUNCTION fn_log_delivery_insert() RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-    INSERT INTO deliveries_audit(warehouse_no, receipt_doc_no, contract_no, part_code, qty, received_date, action)
-    VALUES (NEW.warehouse_no, NEW.receipt_doc_no, NEW.contract_no, NEW.part_code, NEW.qty, NEW.received_date, 'INSERT');
     RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_deliveries_after_insert ON deliveries;
-CREATE TRIGGER trg_deliveries_after_insert
-AFTER INSERT ON deliveries
+
+CREATE TRIGGER trg_check_received_date
+BEFORE INSERT OR UPDATE ON deliveries
 FOR EACH ROW
-EXECUTE FUNCTION fn_log_delivery_insert();
+EXECUTE FUNCTION fn_check_received_date();
+
+
 
 -- хранимая процедура с выходными параметрами
 -- возвращает суммарное количество поставок и договорную цену по договору и детали
@@ -226,19 +216,15 @@ INSERT INTO contracts VALUES
 (105, 'B200', 'kg',  '2024-02-15', '2024-08-15', 700, 700.80);
 
 INSERT INTO deliveries VALUES
-(1, 1, 101, 'A100', 'pcs', 120, '2024-01-10'),
-(1, 2, 101, 'A100', 'pcs', 230, '2024-02-12'),
+(1, 1, 101, 'A100', 'pcs', 120, '2024-03-10'),
+(1, 2, 101, 'A100', 'pcs', 230, '2024-04-12'),
 (1, 3, 101, 'B200', 'kg',  50,  '2024-03-02'),
-
 (2, 1, 102, 'A100', 'pcs', 300, '2024-03-15'),
 (2, 2, 102, 'A100', 'pcs', 410, '2024-04-01'),
-
 (3, 1, 103, 'C300', 'set', 10,  '2024-02-20'),
 (3, 2, 103, 'C300', 'set', 15,  '2024-03-18'),
-
 (4, 1, 104, 'D400', 'm',   500, '2024-05-10'),
 (4, 2, 104, 'D400', 'm',   700, '2024-06-14'),
-
 (5, 1, 105, 'B200', 'kg', 120, '2024-02-28'),
 (5, 2, 105, 'B200', 'kg', 160, '2024-03-20'),
 (5, 3, 105, 'B200', 'kg', 200, '2024-04-25');

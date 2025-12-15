@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/railgorail/kpfu-db-app/internal/domain"
@@ -149,9 +148,9 @@ func (r *Repository) GetTask1(ctx context.Context, price float64) ([]domain.Task
 func (r *Repository) ORMGetTask1(ctx context.Context, price float64) ([]domain.Task1, error) {
 	var deliveries []domain.Delivery
 	err := r.gormDB.WithContext(ctx).
-    Preload("Contract").
-    Order("received_date").
-    Find(&deliveries).Error
+		Preload("Contract").
+		Order("received_date").
+		Find(&deliveries).Error
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +169,7 @@ func (r *Repository) ORMGetTask1(ctx context.Context, price float64) ([]domain.T
 			})
 		}
 	}
-	
+
 	return task1, nil
 }
 
@@ -266,29 +265,9 @@ func (r *Repository) UpdateContract(ctx context.Context, contractNo int, partCod
 }
 
 func (r *Repository) UpdateDelivery(ctx context.Context, warehouseNo, receiptDocNo int, contractNo int, partCode, unit string, qty float64, receivedDate string) error {
-	parsedDate, err := time.Parse("2006-01-02", receivedDate)
-	if err != nil {
-		return fmt.Errorf("invalid date format: %w", err)
-	}
-
-	var startDate, endDate time.Time
-	err = r.db.QueryRow(ctx, `
-		SELECT start_date, end_date 
-		FROM contracts 
-		WHERE contract_no = $1 AND part_code = $2
-	`, contractNo, partCode).Scan(&startDate, &endDate)
-	if err != nil {
-		return fmt.Errorf("contract not found: %w", err)
-	}
-
-	if parsedDate.Before(startDate) || parsedDate.After(endDate) {
-		return fmt.Errorf("received_date %s is outside the contract date interval [%s, %s]",
-			receivedDate, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
-	}
-
-	_, err = r.db.Exec(ctx, `
-		UPDATE deliveries 
-		SET contract_no = $1, part_code = $2, unit = $3, qty = $4, received_date = $5 
+	_, err := r.db.Exec(ctx, `
+		UPDATE deliveries
+		SET contract_no = $1, part_code = $2, unit = $3, qty = $4, received_date = $5
 		WHERE warehouse_no = $6 AND receipt_doc_no = $7
 	`, contractNo, partCode, unit, qty, receivedDate, warehouseNo, receiptDocNo)
 	return err
@@ -309,26 +288,7 @@ func (r *Repository) CreateContract(ctx context.Context, contractNo int, partCod
 }
 
 func (r *Repository) CreateDelivery(ctx context.Context, warehouseNo, receiptDocNo int, contractNo int, partCode, unit string, qty float64, receivedDate string) error {
-	parsedDate, err := time.Parse("2006-01-02", receivedDate)
-	if err != nil {
-		return fmt.Errorf("invalid date format: %w", err)
-	}
-
-	var startDate, endDate time.Time
-	err = r.db.QueryRow(ctx, `
-		SELECT start_date, end_date 
-		FROM contracts 
-		WHERE contract_no = $1 AND part_code = $2
-	`, contractNo, partCode).Scan(&startDate, &endDate)
-	if err != nil {
-		return fmt.Errorf("contract not found: %w", err)
-	}
-
-	if parsedDate.Before(startDate) || parsedDate.After(endDate) {
-		return fmt.Errorf("received_date %s is outside the contract date interval [%s, %s]",
-			receivedDate, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
-	}
-	_, err = r.db.Exec(ctx, `
+	_, err := r.db.Exec(ctx, `
 		INSERT INTO deliveries (warehouse_no, receipt_doc_no, contract_no, part_code, unit, qty, received_date)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`, warehouseNo, receiptDocNo, contractNo, partCode, unit, qty, receivedDate)
